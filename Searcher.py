@@ -1,5 +1,6 @@
 import sys, tty, termios, os
 import heapq
+import curses
 
 class Output(object):
     def init(self):
@@ -12,6 +13,9 @@ class Output(object):
         raise NotImplementedError()
 
     def printItem(self, item, selected):
+        raise NotImplementedError()
+
+    def flush(self):
         raise NotImplementedError()
 
     def cleanup(self):
@@ -31,11 +35,46 @@ class ScreenPrinter(Output):
         print ""
 
     def printQuery(self, q):
-        print "Query: " + q
+        print "$ " + q
 
-    def printItem(self, item, selected):
+    def printItem(self, idx, item, selected):
         prefix = "*" if selected else " "
         print "%s - %s" % (prefix, self.printf(item))
+
+    def flush(self):
+        pass
+
+class CursesPrinter(Output):
+    def __init__(self, printf):
+        self.printf = printf
+        self.querylen = 0
+
+    def init(self):
+        self.window = curses.initscr()
+        curses.noecho()
+        curses.cbreak()
+
+    def cleanup(self):
+        curses.nocbreak()
+        curses.echo()
+        curses.endwin()
+
+    def printQuery(self, query):
+        q = "Query: " + query
+        self.querylen = len(q)
+        self.window.addstr(0, 0, q)
+
+    def printItem(self, idx, item, selected):
+        flags = curses.A_BOLD if selected else curses.A_NORMAL
+        self.window.addstr(1 + idx , 0, ' - ' + self.printf(item), flags)
+
+    def clear(self):
+        self.window.clear()
+
+    def flush(self):
+        self.window.move(0, self.querylen)
+        self.window.refresh()
+        
 
 class CharInput(object):
     def __call__(self):
@@ -86,8 +125,7 @@ class Searcher(object):
             items.append(item)
         return items
 
-    def _loop(self, items, getchar):
-        curHeaps = [ [(0, i) for i in items] ]
+    def _loop(self, curHeaps, getchar, N):
         heapq.heapify(curHeaps[0])
 
         cur = ""
@@ -109,16 +147,14 @@ class Searcher(object):
             else :
                 # Selected
                 if nextchar == '\r':
-                    idx = max(selected, 0)
                     h = curHeaps[-1]
-
-                    for _ in xrange(idx):
+                    for _ in xrange(selected):
                         if not h: break
                         heapq.heappop(h)
 
                     return heapq.heappop(h)[1] if h else None
 
-                selected = -1
+                selected = 0
                 
                 # Escape code
                 if ord(nextchar) in (3,4, 28, 26):
@@ -133,15 +169,23 @@ class Searcher(object):
                     cur += nextchar
                     curHeaps.append(self._newHeap(cur, curHeaps[-1]))
 
-            self.output.clear()
-            self.output.printQuery(cur)
-            
-            for i, item in enumerate(self._topItems(curHeaps[-1], 5)):
-                self.output.printItem(item, i==selected)
+            self._echo(cur, curHeaps[-1], selected, N)
 
-    def run(self, items, input=GetchUnix):
+    def _echo(self, cur, heap, selected, N):
+        self.output.clear()
+        self.output.printQuery(cur)
+        
+        for i, item in enumerate(self._topItems(heap, N)):
+            self.output.printItem(i, item, i==selected)
+
+        self.output.flush()
+
+
+    def run(self, items, rows, input=GetchUnix):
         self.output.init()
         try:
-            return self._loop(items, GetchUnix())
+            curHeaps = [ [(0, i) for i in items] ]
+            self._echo("", curHeaps[0], -1, N=rows)
+            return self._loop(curHeaps, GetchUnix(), rows)
         finally:
             self.output.cleanup()
