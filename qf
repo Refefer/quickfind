@@ -1,0 +1,38 @@
+#!/usr/bin/python
+import os, sys, tty, termios
+import time
+import heapq
+from collections import namedtuple
+
+from Searcher import Searcher, Ranker, ScreenPrinter
+
+File = namedtuple("File", "dir,name,sname")
+
+def visit(agg, dirname, names):
+    agg.extend(File(dirname, name, name.lower()) for name in names)
+
+class SimpleRanker(Ranker):
+
+    def __init__(self, query):
+        self.q = query.lower()
+
+    def rank(self, item):
+        idx = item.sname.find(self.q)
+        return idx if idx != -1 else None
+
+def formatItem(item):
+    return os.path.join(item.dir, item.name)
+
+if __name__ == '__main__':
+    lst = []
+    os.path.walk('.', visit, lst)
+    s = Searcher(SimpleRanker, ScreenPrinter(formatItem))
+    try:
+        found = s.run(lst)
+    except KeyboardInterrupt:
+        sys.exit(0)
+
+    if found is not None:
+        v = os.environ['EDITOR']
+        filename = os.path.join(found.dir, found.name)
+        os.execvp(v, [v, filename])
