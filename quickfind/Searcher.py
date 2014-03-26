@@ -185,8 +185,9 @@ class Searcher(object):
     def run(self, items, rows, input=GetchUnix):
         self.output.init()
         try:
-            curHeaps = [ [(0, i) for i in items] ]
-            self._echo("", curHeaps[0], 0, N=rows)
-            return self._loop(curHeaps, GetchUnix(), rows)
+            heap = [(0, i) for i in items]
+            heapq.heapify(heap)
+            self._echo("", heap, 0, N=rows)
+            return self._loop([heap], GetchUnix(), rows)
         finally:
             self.output.cleanup()
