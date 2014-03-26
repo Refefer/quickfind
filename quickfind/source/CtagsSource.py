@@ -1,52 +1,57 @@
-import os.path
+import os
 from collections import namedtuple
 from Source import Source
 from itertools import islice
 
+from quickfind.Searcher import Ranker
+
 import ctags
 
-ENTRY_FIELDS = ("name", "file", "pattern", "lineNumber", "kind", "fileScope")
+ENTRY_FIELDS = ("name", "file", "disp", "pattern", "lineNumber", "kind", "fileScope")
 Entry = namedtuple("Entry", ENTRY_FIELDS)
 
 class CtagsSource(Source):
     def __init__(self, filename):
         self.tag_file = ctags.CTags(filename)
+        self.base_dir = os.path.split(filename)[0]
 
     def _entry_to_Entry(self, entry):
         ed = dict((f, entry[f]) for f in ENTRY_FIELDS)
         ed['file'] = os.path.abspath(os.path.join(self.base_dir, ed['file']))
         return Entry(**ed)
 
-    def _query(self, query):
+    def _query(self):
         entry = ctags.TagEntry()
         if self.tag_file.first(entry):
-            yield self.entry_to_Entry(entry)
+            yield self._entry_to_Entry(entry)
             while self.tag_file.next(entry):
-                yield self.entry_to_Entry(entry)
+                yield self._entry_to_Entry(entry)
 
     def fetch(self):
-        return map(self._query, self._entry_to_Entry)
+        return list(self._query())
 
-class CompactEntryFormatter(object):
+class CtagsFormatter(object):
     
-    def __init__(self, columns, surrounding=False):
+    def __init__(self, columns, surrounding=True):
         self.detail_cache = {}
         self.columns = columns
         self.surrounding = surrounding
 
-    def format(self, entry):
-        line_prefix = entry.name
-        filename = self.truncate_middle(entry.file, self.columns - len(line_prefix))
-        results = "%s  %s" % (line_prefix, filename)
+    def __call__(self, entry):
+        line_prefix = '%s %s   ' % (entry.kind, entry.name)
 
-        if self.surrounding:
-            details = self.get_details(entry)
-            if details is not None:
-                idetails = self.indent(details, line_prefix.index(':')+5)
-                results.append(idetails)
+        details = ""
+        if self.surrounding and self.columns >= 80:
+            dets = self.get_details(entry)
+            if dets is not None:
+                details = "   " + dets
 
-        return '\n'.join(results)
-
+        trunc_len = self.columns - (len(line_prefix) + len(details))
+        if details:
+            filename = self.truncate_front(entry.file, trunc_len)
+        else:
+            filename = self.truncate_middle(entry.file, trunc_len)
+        return ("%s%s%s" % (line_prefix, filename, details))[:self.columns]
 
     def read_line_at(self, f, num):
         return next(islice(f, num - 1, num), None)
@@ -62,13 +67,25 @@ class CompactEntryFormatter(object):
 
         if entry not in self.detail_cache:
             lineNum = entry.lineNumber
-            with file(entry.file) as f:
-                response = self.read_line_at(f, lineNum)
-                if response is None:
-                    response = entry.pattern
-                self.detail_cache[entry] = response.strip()
+            if not os.path.isfile(entry.file):
+                self.detail_cache[entry] = None
+            else:
+                with file(entry.file) as f:
+                    response = self.read_line_at(f, lineNum)
+                    if response is None:
+                        response = entry.pattern
+                    self.detail_cache[entry] = response.strip()
         
         return self.detail_cache[entry]
+
+    def truncate_front(self, line, length=70):
+        reduce_amt = len(line) - length
+        # If it already fits
+        if reduce_amt <= 0 or length <= 0:
+            return line 
+
+        reduce_amt += 3 # for the ellipsis
+        return '...'+line[reduce_amt:]
 
     def truncate_middle(self, line, length=70):
         reduce_amt = len(line) - length
@@ -85,4 +102,19 @@ class CompactEntryFormatter(object):
 
     def indent(self, s, indent):
         return s.rjust(len(s) + indent)
+
+class CtagsRanker(Ranker):
+
+    def __init__(self, query):
+        self.q = query.lower()
+
+    def rank(self, item):
+        sname = item.name.lower()
+        if self.q not in sname:
+            return None
+
+        score = len(item.name) - len(self.q)
+        score += item.file.count(os.sep) ** 0.5
+        score -= 1.0 if sname.startswith(self.q) else 0.0
+        return score
 

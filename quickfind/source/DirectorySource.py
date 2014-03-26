@@ -70,7 +70,6 @@ class GitIgnoreFilter(object):
                 return False
         return True
 
-File = namedtuple("File", "dir,name,sname")
 class SimpleRanker(Ranker):
 
     def __init__(self, query):

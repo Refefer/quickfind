@@ -1,17 +1,27 @@
 #!/usr/bin/python
-import os, sys, tty, termios
-import time
-import heapq
+import os, sys
+import argparse
 from collections import namedtuple
 
 from quickfind.Searcher import Searcher, Ranker, CursesPrinter
 import quickfind.Console as Console
 from quickfind.source.DirectorySource import DirectorySource, SimpleRanker
+from quickfind.source.CtagsSource import CtagsSource, CtagsRanker, CtagsFormatter
 
-class DirRun(object):
-
+class Runner(object):
     def __init__(self):
         self.rows, self.columns = Console.getDims()
+
+    def find(self):
+        raise NotImplementedError()
+
+    def run(self):
+        filename = self.find()
+        if filename is not None:
+            v = os.environ['EDITOR']
+            os.execvp(v, [v, filename])      
+
+class DirRun(Runner):
 
     @classmethod
     def formatItem(cls, item):
@@ -21,7 +31,7 @@ class DirRun(object):
             n = "..." + n[slice:]
         return n
 
-    def run(self):
+    def find(self):
         items = DirectorySource().fetch()
         s = Searcher(SimpleRanker, CursesPrinter(self.formatItem))
         try:
@@ -30,9 +40,52 @@ class DirRun(object):
             sys.exit(0)
 
         if found is not None:
-            v = os.environ['EDITOR']
-            filename = os.path.join(found.dir, found.name)
-            os.execvp(v, [v, filename])      
+            found = os.path.join(found.dir, found.name)
+        return found 
+
+class CtagsRun(Runner):
+
+    def find(self):
+        ctagsFile = self.find_ctag_file()
+        if ctagsFile is None:
+            print "Could not find ctags file"
+            sys.exit(1)
+
+        items = CtagsSource(ctagsFile).fetch()
+        s = Searcher(CtagsRanker, CursesPrinter(CtagsFormatter(self.columns)))
+        try:
+            found = s.run(items, self.rows - 3)
+        except KeyboardInterrupt:
+            sys.exit(0)
+        if found is not None:
+            return found.file
+
+    def find_ctag_file(self):
+        directory = os.getcwd()
+        for dir in self.rec_dir_up(directory):
+            path = os.path.join(dir, "tags")
+            if os.path.isfile(path):
+                return path
+
+        return None
+
+    def rec_dir_up(self, dir):
+        if os.path.isdir(dir):
+            while True:
+                yield dir 
+                newdir = os.path.split(dir)[0]
+                if newdir == dir: break
+                dir = newdir
+
+def build_arg_parser():
+    parser = argparse.ArgumentParser(description='Quickfind on various archives.')
+    parser.add_argument('-c', action="store_true", help='Ctags quickfind')
+
+    return parser.parse_args()
 
 if __name__ == '__main__':
-    DirRun().run()
+    args = build_arg_parser()
+    if args.c:
+        CtagsRun().run()
+    else:
+        DirRun().run()
