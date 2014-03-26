@@ -29,7 +29,8 @@ class DirectorySource(Source):
                 path, _ = self.filters[-1]
                 while self.filters and not dirname.startswith(path):
                     self.filters.pop()
-                    path, _ = self.filters[-1]
+                    if self.filters:
+                        path, _ = self.filters[-1]
 
                 if self.filters:
                     fltr = self.filters[-1][1]
@@ -59,7 +60,6 @@ class GitIgnoreFilter(object):
                 if fn.startswith('#'): 
                     continue
                 rx = re.compile(fnmatch.translate(fn.strip()))
-                #self.filters.append(rx)
                 filters.append(fnmatch.translate(fn.strip()))
             filters.append(r'\.git')
             

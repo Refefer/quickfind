@@ -140,8 +140,8 @@ class Searcher(object):
 
                 # Up/down
                 if nextchar == 66:
-                    itemsShown= min(N, len(curHeaps[-1]))
-                    selected = min(itemsShown, selected - 1)
+                    itemsShown = min(N, len(curHeaps[-1]))
+                    selected = min(itemsShown, selected + 1)
                 elif nextchar == 65:
                     selected = max(0, selected - 1)
 
