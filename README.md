@@ -20,7 +20,9 @@ To Use
 _quickfind_ has two forms: File search and CTags search, with File search as default.  
 
 After installation, a new executable is added to the path 'qf'.  To use: 
+
     qf # for file search 
+
     qf -c # To search tags in CTags file
 
-
+By default, file search automatically filters out files in .gitignore
