@@ -52,21 +52,21 @@ class CursesPrinter(Output):
     def init(self):
         self.window = curses.initscr()
         curses.noecho()
-        curses.cbreak()
+        #curses.cbreak()
 
     def cleanup(self):
-        curses.nocbreak()
+        #curses.nocbreak()
         curses.echo()
         curses.endwin()
 
     def printQuery(self, query):
-        q = "Query: " + query
+        q = "$ " + query
         self.querylen = len(q)
         self.window.addstr(0, 0, q)
 
     def printItem(self, idx, item, selected):
         flags = curses.A_BOLD if selected else curses.A_NORMAL
-        self.window.addstr(1 + idx , 0, ' - ' + self.printf(item), flags)
+        self.window.addstr(1 + idx , 0, self.printf(item), flags)
 
     def clear(self):
         self.window.clear()
@@ -140,7 +140,7 @@ class Searcher(object):
 
                 # Up/down
                 if nextchar == 66:
-                    selected = min(4,selected + 1)
+                    selected = min(N-1,selected + 1)
                 elif nextchar == 65:
                     selected = max(0,selected - 1)
 
@@ -162,8 +162,8 @@ class Searcher(object):
 
                 # Delete/backspace
                 if ord(nextchar) in (8, 127):
-                    cur = cur[:-1]
                     if cur != "":
+                        cur = cur[:-1]
                         curHeaps.pop()
                 else:
                     cur += nextchar

@@ -18,11 +18,19 @@ class SimpleRanker(Ranker):
         self.q = query.lower()
 
     def rank(self, item):
-        idx = item.sname.find(self.q)
-        return idx if idx != -1 else None
+        if self.q not in item.sname:
+            return None
+        score = len(item.sname) - len(self.q)
+        score += item.dir.count(os.sep) ** 0.5
+        score -= 1.0 if item.sname.startswith(self.q) else 0.0
+        return score
 
 def formatItem(item):
-    return os.path.join(item.dir, item.name)
+    n = os.path.join(item.dir, item.name)
+    if len(n) > 80:
+        slice = max(0, len(n)-83)
+        n = "..." + n[slice:]
+    return n
 
 def getLines():
     import os
