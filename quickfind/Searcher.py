@@ -129,7 +129,7 @@ class Searcher(object):
         heapq.heapify(curHeaps[0])
 
         cur = ""
-        selected = -1
+        selected = 0
         while True:
             nextchar = getchar()
 
@@ -143,7 +143,7 @@ class Searcher(object):
                     itemsShown= min(N, len(curHeaps[-1]))
                     selected = min(itemsShown, selected - 1)
                 elif nextchar == 65:
-                    selected = max(0,selected - 1)
+                    selected = max(0, selected - 1)
 
             else :
                 # Selected
@@ -186,7 +186,7 @@ class Searcher(object):
         self.output.init()
         try:
             curHeaps = [ [(0, i) for i in items] ]
-            self._echo("", curHeaps[0], -1, N=rows)
+            self._echo("", curHeaps[0], 0, N=rows)
             return self._loop(curHeaps, GetchUnix(), rows)
         finally:
             self.output.cleanup()
