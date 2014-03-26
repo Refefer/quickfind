@@ -20,15 +20,18 @@ class DirectorySource(Source):
             if not self.ignore_directories:
                 names = dirs + filenames
 
-            if self.git_ignore and '.gitignore' in names:
+            if self.git_ignore and '.gitignore' in filenames:
                 gif = GitIgnoreFilter(dirname, '.gitignore')
                 self.filters.append((dirname, gif))
+                print "added filter in ", dirname
 
             fltr = None
             if self.filters:
                 path, _ = self.filters[-1]
                 while self.filters and not dirname.startswith(path):
+                    print "removing filter in", path
                     self.filters.pop()
+                    path, _ = self.filters[-1]
 
                 if self.filters:
                     fltr = self.filters[-1][1]
@@ -44,6 +47,7 @@ class DirectorySource(Source):
                 fltr = self.filters[-1][1]
                 it = reversed([i for i, n in enumerate(dirs) if not fltr(n)])
                 for idx in it:
+                    print "deleting ", os.path.join(dirname, dirs[idx])
                     del dirs[idx]
 
         return lst
