@@ -4,13 +4,10 @@ import time
 import heapq
 from collections import namedtuple
 
-from Searcher import Searcher, Ranker, CursesPrinter
+from quickfind.Searcher import Searcher, Ranker, CursesPrinter
+from quickfind.Source import DirectorySource
 
 File = namedtuple("File", "dir,name,sname")
-
-def visit(agg, dirname, names):
-    isFile = lambda n: os.path.isfile(os.path.join(dirname, n))
-    agg.extend(File(dirname, name, name.lower()) for name in names if isFile(name))
 
 class SimpleRanker(Ranker):
 
@@ -51,11 +48,10 @@ def getLines():
     return cr[0]
 
 if __name__ == '__main__':
-    lst = []
-    os.path.walk('.', visit, lst)
+    items = DirectorySource().fetch()
     s = Searcher(SimpleRanker, CursesPrinter(formatItem))
     try:
-        found = s.run(lst, getLines() - 3)
+        found = s.run(items, getLines() - 3)
     except KeyboardInterrupt:
         sys.exit(0)
 
