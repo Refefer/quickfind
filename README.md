@@ -25,4 +25,8 @@ After installation, a new executable is added to the path 'qf'.  To use:
 
     qf -c # To search tags in CTags file
 
+and start typing!  _quickfind_ currently filters on filename for files and tag name
+for ctags.  Up and Down arrow keys selects which file to open.  
+Enter opens the current file with $EDITOR
+
 By default, file search automatically filters out files in .gitignore
