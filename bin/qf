@@ -23,12 +23,11 @@ class Runner(object):
 
 class DirRun(Runner):
 
-    @classmethod
-    def formatItem(cls, item):
+    def formatItem(self, item):
         n = os.path.join(item.dir, item.name)
-        if len(n) > 80:
-            slice = max(0, len(n)-83)
-            n = "..." + n[slice:]
+        if len(n) > self.columns:
+            slice = max(0, len(n) - self.columns)
+            n = "..." + n[(slice+4):]
         return n
 
     def find(self):
