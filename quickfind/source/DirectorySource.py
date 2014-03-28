@@ -89,9 +89,9 @@ class SimpleRanker(Ranker):
         if q not in part:
             return None
 
-        score = len(part) - len(q)
+        score = (len(part) - len(q)) ** 0.5
         score -= 1.0 if part.startswith(q) else 0.0
-        score -= 0.5 if part.endswith(q) else 0.0
+        score -= 1.0 if part.endswith(q) else 0.0
         return score
 
     def rank(self, item):
