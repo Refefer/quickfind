@@ -51,4 +51,9 @@ Add to your .bashrc:
         unset _OFILE
     }
 
-to enable a new command, 'goto', for quickly cd-ing to a directory.
+to enable a new bash command, 'goto', for quickly cd-ing to a directory.
+
+Have a lot of files with similar names?  Add the '-w' flag to allow multiple searchers.  '-w'
+splits queries by white space: a query for "hello world" would result in two filters: 
+"hello" and "world", requiring a file to match both.  This can be useful for specifying 
+part of a filename and then the file extension.
