@@ -7,8 +7,9 @@ from quickfind.Searcher import Ranker
 File = namedtuple("File", "dir,name,sname")
 class DirectorySource(Source):
 
-    def __init__(self, dir=".", ignore_directories=True, git_ignore=True):
+    def __init__(self, dir=".", ignore_directories=True, ignore_files=True, git_ignore=True):
         self.ignore_directories = ignore_directories
+        self.ignore_files = ignore_files
         self.git_ignore = git_ignore
         self.startDir = dir
         self.filters = []
@@ -16,9 +17,11 @@ class DirectorySource(Source):
     def fetch(self):
         lst = []
         for dirname, dirs, filenames in os.walk(self.startDir):
-            names = filenames
+            names = []
+            if not self.ignore_files:
+                names.extend(filenames)
             if not self.ignore_directories:
-                names = dirs + filenames
+                names.extend(dirs)
 
             if self.git_ignore and '.gitignore' in filenames:
                 gif = GitIgnoreFilter(dirname, '.gitignore')

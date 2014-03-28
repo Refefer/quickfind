@@ -9,8 +9,9 @@ from quickfind.source.DirectorySource import DirectorySource, SimpleRanker
 from quickfind.source.CtagsSource import CtagsSource, CtagsRanker, CtagsFormatter
 
 class Runner(object):
-    def __init__(self):
+    def __init__(self, args):
         self.rows, self.columns = Console.getDims()
+        self.args= args
 
     def find(self):
         raise NotImplementedError()
@@ -18,8 +19,12 @@ class Runner(object):
     def run(self):
         filename = self.find()
         if filename is not None:
-            v = os.environ['EDITOR']
-            os.execvp(v, [v, filename])      
+            if self.args.s is not None:
+                with file(self.args.s, 'w') as f:
+                     f.write(filename)
+            else:
+                v = os.environ['EDITOR']
+                os.execvp(v, [v, filename])      
 
 class DirRun(Runner):
 
@@ -31,7 +36,15 @@ class DirRun(Runner):
         return n
 
     def find(self):
-        items = DirectorySource().fetch()
+
+        if self.args.fileType == 'all':
+            ds = DirectorySource(ignore_directories=False, ignore_files=False)
+        elif self.args.fileType == 'files':
+            ds = DirectorySource(ignore_files=False)
+        else:
+            ds = DirectorySource(ignore_directories=False)
+
+        items = ds.fetch()
         s = Searcher(SimpleRanker, CursesPrinter(self.formatItem))
         try:
             found = s.run(items, self.rows - 3)
@@ -79,12 +92,23 @@ class CtagsRun(Runner):
 def build_arg_parser():
     parser = argparse.ArgumentParser(description='Quickfind on various archives.')
     parser.add_argument('-c', action="store_true", help='Ctags quickfind')
+    parser.add_argument('-s', help='Prints the file instead of executing it.')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-f', action="store_const", dest="fileType", const="files",
+                        help='Files only.  This is the default.')
+    group.add_argument('-d', action="store_const", dest="fileType", const="dirs",
+                        help='Directories only.')
+    group.add_argument('-a', action="store_const", dest="fileType", const="all",
+                        help='Both files and directories.')
+    parser.set_defaults(fileType="files")
 
     return parser.parse_args()
 
 if __name__ == '__main__':
     args = build_arg_parser()
     if args.c:
-        CtagsRun().run()
+        runner = CtagsRun(args)
     else:
-        DirRun().run()
+        runner = DirRun(args)
+
+    runner.run()
