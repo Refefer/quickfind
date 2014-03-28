@@ -84,8 +84,6 @@ class GitIgnoreFilter(object):
                     file_filters.append(fnmatch.translate(fn.strip()))
             file_filters.append(r'\.git')
             
-        import pprint
-        pprint.pprint(file_filters)
         self.filters = [re.compile('|'.join(file_filters))]
         self.path_filters = self.setup_path_filters(path_filters)
 
