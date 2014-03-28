@@ -6,11 +6,16 @@ or a ctags file.
 Install
 -------
 
-To install, clone the repo and type:
+To install from Pypi:
+
+    pip install quickfind.
+
+To install from source, clone the repo and type:
 
     python setup.py install
 
  in the directory.  
+
 'sudo' might be needed, depending on permissions.
 
 To Use
