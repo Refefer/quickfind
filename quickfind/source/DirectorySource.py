@@ -72,7 +72,6 @@ class GitIgnoreFilter(object):
     def __init__(self, dirname, filename):
         self.dirname = dirname
         self.fn = os.path.join(dirname, filename)
-        filters = []
         file_filters = []
         path_filters = []
         with file(self.fn) as f:
@@ -82,9 +81,11 @@ class GitIgnoreFilter(object):
                 if fn.startswith('/'):
                     path_filters.append(fn)
                 else:
-                    filters.append(fnmatch.translate(fn.strip()))
+                    file_filters.append(fnmatch.translate(fn.strip()))
             file_filters.append(r'\.git')
             
+        import pprint
+        pprint.pprint(file_filters)
         self.filters = [re.compile('|'.join(file_filters))]
         self.path_filters = self.setup_path_filters(path_filters)
 
