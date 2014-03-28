@@ -2,8 +2,7 @@ quickfind
 =========
 
 Fuzzy finder for the terminal.  `quickfind` can search both files in the file system
-or a ctags file.
-
+or a ctags file.  
 Install
 -------
 
@@ -25,8 +24,31 @@ After installation, a new executable is added to the path 'qf'.  To use:
 
     qf -c # To search tags in CTags file
 
-and start typing!  _quickfind_ currently filters on filename for files and tag name
-for ctags.  Up and Down arrow keys selects which file to open.  
-Enter opens the current file with $EDITOR
+and start typing!  _quickfind_ can be configured to match against file name and/or path
+while selecting either files, directories, or both.  By default, it filters out files listed
+in a tree's .gitignore.
 
-By default, file search automatically filters out files in .gitignore
+Up and Down arrow keys selects which file to open.  Enter opens the current file with $EDITOR.
+If -s FILENAME is specified, quickfind writes the selected file to disk.
+
+Tricks
+-----
+Add to your .bashrc:
+
+    bind '"\C-f": "qf\n"'
+
+to add ctrl+f as a qf hotkey.
+
+Add to your .bashrc:
+
+    function goto() {
+        _OFILE=/tmp/qf.$$
+        qf -d -s $_OFILE
+        if [ -f $_OFILE ]; then
+            cd `cat $_OFILE`
+            rm $_OFILE
+        fi
+        unset _OFILE
+    }
+
+to enable a new command, 'goto', for quickly cd-ing to a directory.
