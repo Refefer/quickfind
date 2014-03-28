@@ -2,12 +2,12 @@
 import os, sys
 import argparse
 import functools
-import time
 
 from quickfind.Searcher import Searcher, Ranker, CursesPrinter
 import quickfind.Console as Console
 from quickfind.source.DirectorySource import DirectorySource, SimpleRanker, FilePrinter
 from quickfind.source.CtagsSource import CtagsSource, CtagsRanker, CtagsFormatter
+from quickfind.source.Util import rec_dir_up
 
 class Runner(object):
     def __init__(self, args):
@@ -31,12 +31,14 @@ class DirRun(Runner):
 
     def find(self):
 
+        git_ignore = self.args.g
         if self.args.fileType == 'all':
-            ds = DirectorySource(ignore_directories=False, ignore_files=False)
+            ds = DirectorySource(ignore_directories=False, 
+                    ignore_files=False, git_ignore=git_ignore)
         elif self.args.fileType == 'files':
-            ds = DirectorySource(ignore_files=False)
+            ds = DirectorySource(ignore_files=False, git_ignore=git_ignore)
         else:
-            ds = DirectorySource(ignore_directories=False)
+            ds = DirectorySource(ignore_directories=False, git_ignore=git_ignore)
 
         items = ds.fetch()
 
@@ -71,20 +73,12 @@ class CtagsRun(Runner):
 
     def find_ctag_file(self):
         directory = os.getcwd()
-        for dir in self.rec_dir_up(directory):
+        for dir in rec_dir_up(directory):
             path = os.path.join(dir, "tags")
             if os.path.isfile(path):
                 return path
 
         return None
-
-    def rec_dir_up(self, dir):
-        if os.path.isdir(dir):
-            while True:
-                yield dir 
-                newdir = os.path.split(dir)[0]
-                if newdir == dir: break
-                dir = newdir
 
 def build_arg_parser():
     parser = argparse.ArgumentParser(description='Quickfind on various archives.')
@@ -93,7 +87,7 @@ def build_arg_parser():
     parser.add_argument('-s', 
             help='Writes the file to provided file instead of executing it.')
     parser.add_argument('-g', 
-            help='Do not filter out files in .gitignore')
+            action="store_false", help='Do not filter out files in .gitignore')
     parser.add_argument('-w', 
             action="store_true", help='White space separates multiple queries')
     parser.add_argument('-p', 

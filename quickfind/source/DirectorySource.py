@@ -1,9 +1,10 @@
 import os, re, fnmatch
 from collections import namedtuple
+from itertools import islice
 
 from Source import Source
 from quickfind.Searcher import Ranker
-from Util import truncate_middle
+from Util import truncate_middle, rec_dir_up
 
 File = namedtuple("File", "dir,name,sname")
 class DirectorySource(Source):
@@ -14,6 +15,17 @@ class DirectorySource(Source):
         self.git_ignore = git_ignore
         self.startDir = dir
         self.filters = []
+        if git_ignore:
+            self.find_parent_gis()
+
+    def find_parent_gis(self):
+        dirs = rec_dir_up(self.startDir)
+        dirs.next()
+        for dirname in dirs:
+            pgi = os.path.join(dirname, '.gitignore')
+            if os.path.isfile(pgi):
+                self.filters.append(GitIgnoreFilter(dirname, '.gitignore'))
+        self.filters.reverse()
 
     def fetch(self):
         lst = []
@@ -40,36 +52,75 @@ class DirectorySource(Source):
             if fltr is None:
                 files = (File(dirname, name, name.lower()) for name in names)
             else:
-                files = (File(dirname, name, name.lower()) for name in names if fltr(name))
+                files = (File(dirname, name, name.lower()) 
+                        for name in names if fltr(name, dirname))
             lst.extend(files)
 
             # have to delete the names manually
             if fltr is not None:
                 for i in xrange(len(dirs) - 1, -1, -1):
-                    if not fltr(dirs[i]):
+                    if not fltr(dirs[i], dirname):
                         del dirs[i]
 
         return lst
 
 class GitIgnoreFilter(object):
+    # Optimization
+    lastdir = None
+    last_path_filter = None
 
     def __init__(self, dirname, filename):
+        self.dirname = dirname
         self.fn = os.path.join(dirname, filename)
         filters = []
+        file_filters = []
+        path_filters = []
         with file(self.fn) as f:
             for fn in f:
                 if fn.startswith('#'): 
                     continue
-                rx = re.compile(fnmatch.translate(fn.strip()))
-                filters.append(fnmatch.translate(fn.strip()))
-            filters.append(r'\.git')
+                if fn.startswith('/'):
+                    path_filters.append(fn)
+                else:
+                    filters.append(fnmatch.translate(fn.strip()))
+            file_filters.append(r'\.git')
             
-        self.filters = [re.compile('|'.join(filters))]
+        self.filters = [re.compile('|'.join(file_filters))]
+        self.path_filters = self.setup_path_filters(path_filters)
 
-    def __call__(self, fn):
+    def setup_path_filters(self, path_filters):
+        # We can currently glob on only filename positions
+        dirmaps = {}
+        for pf in path_filters:
+            while pf.endswith('/'):
+                pf = pf[:-1]
+
+            dirname, basename = os.path.split(pf)
+            dm = os.path.join(self.dirname, dirname.lstrip('/'))
+            glob = fnmatch.translate(basename.strip())
+            if dm in dirmaps:
+                dirmaps[dm].append(glob)
+            else:
+                dirmaps[dm] = [glob]
+
+        # Build glob maps
+        for k, vs in dirmaps.iteritems():
+            dirmaps[k] = re.compile('|'.join(vs))
+
+        return dirmaps 
+
+    def __call__(self, fn, dirname):
+        # Check global globs
         for f in self.filters:
             if f.match(fn) is not None:
                 return False
+
+        lpf = self.path_filters.get(dirname)
+
+        # check path dependent globs
+        if lpf is not None and lpf.match(fn) is not None:
+            return False
+
         return True
 
 class SimpleRanker(Ranker):
@@ -114,7 +165,6 @@ class SimpleRanker(Ranker):
     def new(ws_query, inc_path):
         return type('SimpleRanker', (SimpleRanker,), 
                     dict(ws_query=ws_query, inc_path=inc_path))
-
 
 def FilePrinter(f, length):
     return truncate_middle(os.path.join(f.dir, f.name), length)
