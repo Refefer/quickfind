@@ -8,7 +8,7 @@ Install
 
 To install from Pypi:
 
-    pip install quickfind.
+    pip install quickfind
 
 To install from source, clone the repo and type:
 
