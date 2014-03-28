@@ -186,7 +186,7 @@ class Searcher(object):
         self.output.init()
         try:
             heap = [(0, i) for i in items]
-            heapq.heapify(heap)
+            heap.sort()
             self._echo("", heap, 0, N=rows)
             return self._loop([heap], GetchUnix(), rows)
         finally:

@@ -1,11 +1,12 @@
 #!/usr/bin/python
 import os, sys
 import argparse
-from collections import namedtuple
+import functools
+import time
 
 from quickfind.Searcher import Searcher, Ranker, CursesPrinter
 import quickfind.Console as Console
-from quickfind.source.DirectorySource import DirectorySource, SimpleRanker
+from quickfind.source.DirectorySource import DirectorySource, SimpleRanker, FilePrinter
 from quickfind.source.CtagsSource import CtagsSource, CtagsRanker, CtagsFormatter
 
 class Runner(object):
@@ -28,13 +29,6 @@ class Runner(object):
 
 class DirRun(Runner):
 
-    def formatItem(self, item):
-        n = os.path.join(item.dir, item.name)
-        if len(n) > self.columns:
-            slice = max(0, len(n) - self.columns)
-            n = "..." + n[(slice+4):]
-        return n
-
     def find(self):
 
         if self.args.fileType == 'all':
@@ -45,7 +39,10 @@ class DirRun(Runner):
             ds = DirectorySource(ignore_directories=False)
 
         items = ds.fetch()
-        s = Searcher(SimpleRanker, CursesPrinter(self.formatItem))
+
+        f = functools.partial(FilePrinter, length=self.columns)
+        sr = SimpleRanker.new(self.args.w, self.args.p)
+        s = Searcher(sr, CursesPrinter(f))
         try:
             found = s.run(items, self.rows - 3)
         except KeyboardInterrupt:
@@ -91,11 +88,18 @@ class CtagsRun(Runner):
 
 def build_arg_parser():
     parser = argparse.ArgumentParser(description='Quickfind on various archives.')
-    parser.add_argument('-c', action="store_true", help='Ctags quickfind')
-    parser.add_argument('-s', help='Prints the file instead of executing it.')
+    parser.add_argument('-c', 
+            action="store_true", help='Ctags quickfind')
+    parser.add_argument('-s', 
+            help='Writes the file to provided file instead of executing it.')
+    parser.add_argument('-g', 
+            help='Do not filter out files in .gitignore')
+    parser.add_argument('-w', 
+            action="store_true", help='White space separates multiple queries')
+    parser.add_argument('-p', 
+            action="store_true", help='Match also on path')
+
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-f', action="store_const", dest="fileType", const="files",
-                        help='Files only.  This is the default.')
     group.add_argument('-d', action="store_const", dest="fileType", const="dirs",
                         help='Directories only.')
     group.add_argument('-a', action="store_const", dest="fileType", const="all",

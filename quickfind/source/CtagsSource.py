@@ -4,6 +4,7 @@ from Source import Source
 from itertools import islice
 
 from quickfind.Searcher import Ranker
+from Util import truncate_middle, truncate_front
 
 import ctags
 
@@ -48,9 +49,9 @@ class CtagsFormatter(object):
 
         trunc_len = self.columns - (len(line_prefix) + len(details))
         if details:
-            filename = self.truncate_front(entry.file, trunc_len)
+            filename = truncate_front(entry.file, trunc_len)
         else:
-            filename = self.truncate_middle(entry.file, trunc_len)
+            filename = truncate_middle(entry.file, trunc_len)
         return ("%s%s%s" % (line_prefix, filename, details))[:self.columns]
 
     def read_line_at(self, f, num):
@@ -77,28 +78,6 @@ class CtagsFormatter(object):
                     self.detail_cache[entry] = response.strip()
         
         return self.detail_cache[entry]
-
-    def truncate_front(self, line, length=70):
-        reduce_amt = len(line) - length
-        # If it already fits
-        if reduce_amt <= 0 or length <= 0:
-            return line 
-
-        reduce_amt += 3 # for the ellipsis
-        return '...'+line[reduce_amt:]
-
-    def truncate_middle(self, line, length=70):
-        reduce_amt = len(line) - length
-
-        # If it already fits
-        if reduce_amt <= 0 or length <= 0:
-            return line 
-
-        reduce_amt += 3 # for the ellipsis
-
-        start = (len(line) / 2) - (reduce_amt / 2)
-        end = start + reduce_amt
-        return "%s...%s" % (line[:start], line[end:])
 
     def indent(self, s, indent):
         return s.rjust(len(s) + indent)
