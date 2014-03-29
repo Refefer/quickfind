@@ -6,6 +6,12 @@ from Source import Source
 from quickfind.Searcher import Ranker, CString
 from Util import truncate_middle, rec_dir_up, highlight
 
+try:
+    import fsnix.util as util
+    walk = util.walk
+except ImportError:
+    walk = os.walk
+
 File = namedtuple("File", "dir,name,sname")
 class DirectorySource(Source):
 
@@ -29,7 +35,7 @@ class DirectorySource(Source):
 
     def fetch(self):
         lst = []
-        for dirname, dirs, filenames in os.walk(self.startDir):
+        for dirname, dirs, filenames in walk(self.startDir):
             names = []
             if not self.ignore_files:
                 names = filenames
@@ -69,22 +75,33 @@ class GitIgnoreFilter(object):
     lastdir = None
     last_path_filter = None
 
+    globchars = re.compile('[*\[\]?]')
     def __init__(self, dirname, filename):
         self.dirname = dirname
         self.fn = os.path.join(dirname, filename)
-        file_filters = []
         path_filters = []
+        glob_filters = []
+        exact_filters = set(['.git'])
         with file(self.fn) as f:
+            gc = self.globchars
             for fn in f:
                 if fn.startswith('#'): 
                     continue
+
+                fn = fn.strip()
                 if fn.startswith('/'):
                     path_filters.append(fn)
+                elif gc.search(fn) is not None:
+                    glob_filters.append(fnmatch.translate(fn.strip()))
                 else:
-                    file_filters.append(fnmatch.translate(fn.strip()))
-            file_filters.append(r'\.git')
+                    exact_filters.add(fn)
             
-        self.filters = [re.compile('|'.join(file_filters))]
+        if glob_filters:
+            self.glob_filters = [re.compile('|'.join(glob_filters))]
+        else:
+            self.glob_filters = []
+
+        self.exact_filters = exact_filters
         self.path_filters = self.setup_path_filters(path_filters)
 
     def setup_path_filters(self, path_filters):
@@ -109,8 +126,11 @@ class GitIgnoreFilter(object):
         return dirmaps 
 
     def __call__(self, fn, dirname):
+        # check exact
+        if fn in self.exact_filters:
+            return False
         # Check global globs
-        for f in self.filters:
+        for f in self.glob_filters:
             if f.match(fn) is not None:
                 return False
 
