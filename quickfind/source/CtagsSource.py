@@ -3,7 +3,7 @@ from collections import namedtuple
 from Source import Source
 from itertools import islice
 
-from quickfind.Searcher import Ranker
+from quickfind.Searcher import Ranker,CString
 from Util import truncate_middle, truncate_front, highlight
 
 import ctags
@@ -56,7 +56,8 @@ class CtagsFormatter(object):
 
         lens = len(line_prefix)
         res  = highlight(line_prefix, query)
-        res.append(("%s%s" % (filename, details))[:(columns - lens)])
+        res.append(CString(filename, "cyan"))
+        res.append(details)
         return res
 
     def read_line_at(self, f, num):

@@ -146,7 +146,6 @@ class SimpleRanker(Ranker):
 
     ws_query = False
     inc_path = False
-    
 
     def __init__(self, query):
         self.qs = query.lower()
@@ -159,7 +158,7 @@ class SimpleRanker(Ranker):
         if q not in part:
             return None
 
-        # Don't do more interesting ranking
+        # Don't do more interesting ranking with one character
         lq = len(q)
         lp = len(part)
         if lq == 1:

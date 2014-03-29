@@ -88,14 +88,24 @@ class CursesPrinter(Output):
     def printItem(self, idx, item, selected, query):
         flags = curses.A_BOLD if selected else curses.A_NORMAL
         self.window.move(1 + idx, 0)
-        for t in self.convert(self.printf(item, query, self.dimensions())):
-            if not t.text:
-                continue
+        colors = {}
+        num = 1
+        x, y = self.dimensions()
+        for t in self.convert(self.printf(item, query, (x,y))):
+            text = t.text[:(x - self.window.getyx()[1])]
+            if not text: continue
             if t.fcolor == t.bcolor == -1:
-                self.window.addstr(t.text, t.weight | flags)
+                self.window.addstr(text, t.weight | flags)
             else:
-                curses.init_pair(1, t.fcolor, t.bcolor)
-                self.window.addstr(t.text, curses.color_pair(1) | t.weight | flags)
+                cp = (t.fcolor, t.bcolor)
+                if cp not in colors:
+                    colors[cp] = num
+                    curses.init_pair(num, t.fcolor, t.bcolor)
+                    num += 1
+                    if not num % 8:
+                        num = 1
+
+                self.window.addstr(text, curses.color_pair(colors[cp]) | t.weight | flags)
 
     def printCount(self, total, current):
         x, y = self.dimensions()
@@ -147,7 +157,7 @@ class CString(object):
     }
 
     def __init__(self, text, fcolor="default", bcolor="default", weight="normal"):
-        self.text = unicode(text)
+        self.text = unicode(text, errors="ignore")
         self.fcolor = self.colors.get(fcolor, -1)
         self.bcolor = self.colors.get(bcolor, -1)
         self.weight = self.weights[weight]
@@ -224,7 +234,7 @@ class Searcher(object):
                 if nextchar == '\r':
                     h = curHeaps[-1]
                     try:
-                        return h[idx][1]
+                        return h[selected][1]
                     except IndexError:
                         return None
 
