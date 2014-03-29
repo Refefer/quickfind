@@ -231,9 +231,9 @@ class Searcher(object):
             else :
                 # Selected
                 if nextchar == '\r':
-                    h = curHeaps[-1]
+                    h = self._topItems(curHeaps[-1], selected + 1)
                     try:
-                        return h[selected][1]
+                        return h[selected]
                     except IndexError:
                         return None
 
