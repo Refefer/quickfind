@@ -199,12 +199,11 @@ class Searcher(object):
                 yield (score, item)
 
     def _newHeap(self, query, curHeap):
-        return sorted(self._ranker(self.ranker(query), curHeap)) 
+        return list(self._ranker(self.ranker(query), curHeap)) 
 
     def _topItems(self, heap, N):
         items = []
-        for i, (_, item) in enumerate(heap):
-            if i == N: break
+        for (_, item) in heapq.nsmallest(N, heap):
             items.append(item)
         return items
 
