@@ -35,19 +35,20 @@ class CtagsFormatter(object):
     
     def __init__(self, columns, surrounding=True):
         self.detail_cache = {}
-        self.columns = columns
         self.surrounding = surrounding
 
-    def __call__(self, entry, query):
+    def __call__(self, entry, query, dims):
         line_prefix = '%s %s   ' % (entry.kind, entry.name)
 
+        columns = dims[0]
+
         details = ""
-        if self.surrounding and self.columns >= 80:
+        if self.surrounding and columns >= 80:
             dets = self.get_details(entry)
             if dets is not None:
                 details = "   " + dets
 
-        trunc_len = self.columns - (len(line_prefix) + len(details))
+        trunc_len = columns - (len(line_prefix) + len(details))
         if details:
             filename = truncate_front(entry.file, trunc_len)
         else:
@@ -55,7 +56,7 @@ class CtagsFormatter(object):
 
         lens = len(line_prefix)
         res  = highlight(line_prefix, query)
-        res.append(("%s%s" % (filename, details))[:(self.columns - lens)])
+        res.append(("%s%s" % (filename, details))[:(columns - lens)])
         return res
 
     def read_line_at(self, f, num):

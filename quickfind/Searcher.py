@@ -7,6 +7,9 @@ class Output(object):
     def init(self):
         raise NotImplementedError()
 
+    def dimensions(self):
+        raise NotImplementedError()
+
     def clear(self):
         raise NotImplementedError()
 
@@ -16,6 +19,9 @@ class Output(object):
     def printItem(self, item, selected, query):
         raise NotImplementedError()
 
+    def printCount(self, total, current):
+        raise NotImplementedError()
+
     def flush(self):
         raise NotImplementedError()
 
@@ -23,14 +29,19 @@ class Output(object):
         raise NotImplementedError()
 
 class ScreenPrinter(Output):
-    def __init__(self, printf):
+    def __init__(self, printf, cols, rows):
         self.printf = printf
+        self.cols = cols
+        self.rows = rows
 
     def init(self):
         pass
 
     def cleanup(self):
         pass
+
+    def dimensions(self):
+        return self.cols, self.rows
 
     def clear(self):
         print ""
@@ -40,7 +51,10 @@ class ScreenPrinter(Output):
 
     def printItem(self, idx, item, selected, query):
         prefix = "*" if selected else " "
-        print "%s - %s" % (prefix, self.printf(item, query))
+        print "%s - %s" % (prefix, self.printf(item, query, self.dimensions()))
+
+    def printCount(self, total, current):
+        print "[%s / %s]" % (current, total)
 
     def flush(self):
         pass
@@ -60,6 +74,10 @@ class CursesPrinter(Output):
         curses.echo()
         curses.endwin()
 
+    def dimensions(self):
+        y, x = self.window.getmaxyx()
+        return x, y
+
     def printQuery(self, query):
         q = "$ " + query
         self.querylen = len(q)
@@ -68,7 +86,7 @@ class CursesPrinter(Output):
     def printItem(self, idx, item, selected, query):
         flags = curses.A_BOLD if selected else curses.A_NORMAL
         self.window.move(1 + idx, 0)
-        for t in self.convert(self.printf(item, query)):
+        for t in self.convert(self.printf(item, query, self.dimensions())):
             if not t.text:
                 continue
             if t.fcolor == t.bcolor == -1:
@@ -76,6 +94,12 @@ class CursesPrinter(Output):
             else:
                 curses.init_pair(1, t.fcolor, t.bcolor)
                 self.window.addstr(t.text, curses.color_pair(1) | t.weight | flags)
+
+    def printCount(self, total, current):
+        x, y = self.dimensions()
+
+        counts = "[%s / %s]" % (current, total)
+        self.window.addstr(y-1, x - len(counts)-1, counts)
 
     def convert(self, text):
         if not isinstance(text, list):
@@ -157,31 +181,29 @@ class Searcher(object):
         self.output = output
 
     def _newHeap(self, query, curHeap):
-        newHeap = []
+        items = []
         ranker = self.ranker(query)
         for w, item in curHeap:
             score = ranker.rank(item)
             if score is not None:
-                heapq.heappush(newHeap, (score, item))
-        return newHeap
+                items.append((score, item))
+        return sorted(items) 
 
-    def _topItems(self, heap, N=5):
-        h = heap[:]
+    def _topItems(self, heap, N):
         items = []
-        for _ in xrange(N):
-            if len(h) == 0:
-                break
-            w, item  = heapq.heappop(h)
+        for i, (_, item) in enumerate(heap):
+            if i == N: break
             items.append(item)
         return items
 
-    def _loop(self, curHeaps, getchar, N):
+    def _loop(self, curHeaps, getchar):
         heapq.heapify(curHeaps[0])
 
         cur = ""
         selected = 0
         while True:
             nextchar = getchar()
+            cols, rows = self.output.dimensions()
 
             # Ansi escape for arrows
             if ord(nextchar) == 27:
@@ -190,7 +212,7 @@ class Searcher(object):
 
                 # Up/down
                 if nextchar == 66:
-                    itemsShown = min(N, len(curHeaps[-1])) - 1
+                    itemsShown = min(rows, len(curHeaps[-1])) - 1
                     selected = min(itemsShown, selected + 1)
                 elif nextchar == 65:
                     selected = max(0, selected - 1)
@@ -220,24 +242,27 @@ class Searcher(object):
                     cur += nextchar
                     curHeaps.append(self._newHeap(cur, curHeaps[-1]))
 
-            self._echo(cur, curHeaps[-1], selected, N)
+            self._echo(cur, curHeaps[-1], selected, len(curHeaps[0]))
 
-    def _echo(self, cur, heap, selected, N):
+    def _echo(self, query, heap, selected, totalItems):
         self.output.clear()
-        self.output.printQuery(cur)
-        
-        for i, item in enumerate(self._topItems(heap, N)):
-            self.output.printItem(i, item, i==selected, cur)
+        self.output.printQuery(query)
 
+        cols, rows = self.output.dimensions()
+        
+        for i, item in enumerate(self._topItems(heap, rows-2)):
+            self.output.printItem(i, item, i==selected, query)
+
+        self.output.printCount(totalItems, len(heap))
         self.output.flush()
 
 
-    def run(self, items, rows, input=GetchUnix):
+    def run(self, items, input=GetchUnix):
         self.output.init()
         try:
             heap = [(0, i) for i in items]
             heap.sort()
-            self._echo("", heap, 0, N=rows)
-            return self._loop([heap], GetchUnix(), rows)
+            self._echo("", heap, 0, len(items))
+            return self._loop([heap], GetchUnix())
         finally:
             self.output.cleanup()

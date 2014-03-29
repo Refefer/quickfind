@@ -146,7 +146,7 @@ class SimpleRanker(Ranker):
 
     ws_query = False
     inc_path = False
-    weight_f = staticmethod(lambda f: f.dir.count(os.sep) ** 0.5)
+    
 
     def __init__(self, query):
         self.qs = query.lower()
@@ -159,7 +159,13 @@ class SimpleRanker(Ranker):
         if q not in part:
             return None
 
-        score = (len(part) - len(q)) ** 0.5
+        # Don't do more interesting ranking
+        lq = len(q)
+        lp = len(part)
+        if lq == 1:
+            return lp
+
+        score = (lp) ** 0.5
         score -= 1.0 if part.startswith(q) else 0.0
         score -= 1.0 if part.endswith(q) else 0.0
         return score
@@ -176,15 +182,15 @@ class SimpleRanker(Ranker):
             if score is None:
                 return None
             agg_score += score
-
-        return agg_score + self.weight_f(item)
+        
+        return agg_score + item.dir.count(os.sep) ** 0.5
     
     @staticmethod
     def new(ws_query, inc_path):
         return type('SimpleRanker', (SimpleRanker,), 
                     dict(ws_query=ws_query, inc_path=inc_path))
 
-def FilePrinter(f, query, length):
-    v = truncate_middle(os.path.join(f.dir, f.name), length)
+def formatter(f, query, dims):
+    v = truncate_middle(os.path.join(f.dir, f.name), dims[0])
     return highlight(v, query)
 

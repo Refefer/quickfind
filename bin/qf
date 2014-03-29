@@ -5,7 +5,7 @@ import functools
 
 from quickfind.Searcher import Searcher, Ranker, CursesPrinter
 import quickfind.Console as Console
-from quickfind.source.DirectorySource import DirectorySource, SimpleRanker, FilePrinter
+from quickfind.source.DirectorySource import DirectorySource, SimpleRanker, formatter
 from quickfind.source.CtagsSource import CtagsSource, CtagsRanker, CtagsFormatter
 from quickfind.source.Util import rec_dir_up
 
@@ -42,11 +42,10 @@ class DirRun(Runner):
 
         items = ds.fetch()
 
-        f = functools.partial(FilePrinter, length=self.columns)
         sr = SimpleRanker.new(self.args.w, self.args.p)
-        s = Searcher(sr, CursesPrinter(f))
+        s = Searcher(sr, CursesPrinter(formatter))
         try:
-            found = s.run(items, self.rows - 3)
+            found = s.run(items)
         except KeyboardInterrupt:
             sys.exit(0)
 
