@@ -4,7 +4,7 @@ from Source import Source
 from itertools import islice
 
 from quickfind.Searcher import Ranker
-from Util import truncate_middle, truncate_front
+from Util import truncate_middle, truncate_front, highlight
 
 import ctags
 
@@ -38,7 +38,7 @@ class CtagsFormatter(object):
         self.columns = columns
         self.surrounding = surrounding
 
-    def __call__(self, entry):
+    def __call__(self, entry, query):
         line_prefix = '%s %s   ' % (entry.kind, entry.name)
 
         details = ""
@@ -52,7 +52,11 @@ class CtagsFormatter(object):
             filename = truncate_front(entry.file, trunc_len)
         else:
             filename = truncate_middle(entry.file, trunc_len)
-        return ("%s%s%s" % (line_prefix, filename, details))[:self.columns]
+
+        lens = len(line_prefix)
+        res  = highlight(line_prefix, query)
+        res.append(("%s%s" % (filename, details))[:(self.columns - lens)])
+        return res
 
     def read_line_at(self, f, num):
         return next(islice(f, num - 1, num), None)

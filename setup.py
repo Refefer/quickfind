@@ -12,6 +12,9 @@ setup(name='quickfind',
       author='Andrew Stanton',
       author_email='Andrew Stanton',
       install_requires=['python-ctags'],
+      extras_requires= {
+          "levenshtein": ["python-Levenshtein"]
+      },
       classifiers=[
        "License :: OSI Approved :: Apache Software License",
        "Programming Language :: Python :: 2.6",
