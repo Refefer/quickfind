@@ -1,7 +1,9 @@
 import sys, tty, termios, os
+from itertools  import izip,repeat,imap
 import heapq
 from contextlib import contextmanager
 import curses
+import multiprocessing
 
 class Output(object):
     def init(self):
@@ -180,14 +182,14 @@ class Searcher(object):
         self.ranker = ranker
         self.output = output
 
-    def _newHeap(self, query, curHeap):
-        items = []
-        ranker = self.ranker(query)
+    def _ranker(self, ranker, curHeap):
         for w, item in curHeap:
             score = ranker.rank(item)
             if score is not None:
-                items.append((score, item))
-        return sorted(items) 
+                yield (score, item)
+
+    def _newHeap(self, query, curHeap):
+        return sorted(self._ranker(self.ranker(query), curHeap)) 
 
     def _topItems(self, heap, N):
         items = []
@@ -221,11 +223,10 @@ class Searcher(object):
                 # Selected
                 if nextchar == '\r':
                     h = curHeaps[-1]
-                    for _ in xrange(selected):
-                        if not h: break
-                        heapq.heappop(h)
-
-                    return heapq.heappop(h)[1] if h else None
+                    try:
+                        return h[idx][1]
+                    except IndexError:
+                        return None
 
                 selected = 0
                 
