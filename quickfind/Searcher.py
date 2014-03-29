@@ -72,10 +72,10 @@ class CursesPrinter(Output):
             if not t.text:
                 continue
             if t.fcolor == t.bcolor == -1:
-                self.window.addstr(t.text, t.weight)
+                self.window.addstr(t.text, t.weight | flags)
             else:
                 curses.init_pair(1, t.fcolor, t.bcolor)
-                self.window.addstr(t.text, curses.color_pair(1) | t.weight)
+                self.window.addstr(t.text, curses.color_pair(1) | t.weight | flags)
 
     def convert(self, text):
         if not isinstance(text, list):

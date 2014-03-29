@@ -157,7 +157,6 @@ class SimpleRanker(Ranker):
                 return None
             agg_score += score
 
-        
         return agg_score + self.weight_f(item)
     
     @staticmethod
