@@ -3,7 +3,7 @@ from collections import namedtuple
 from itertools import islice
 
 from Source import Source
-from quickfind.Searcher import Ranker
+from quickfind.Searcher import Ranker, CString
 from Util import truncate_middle, rec_dir_up
 
 File = namedtuple("File", "dir,name,sname")
@@ -165,5 +165,15 @@ class SimpleRanker(Ranker):
         return type('SimpleRanker', (SimpleRanker,), 
                     dict(ws_query=ws_query, inc_path=inc_path))
 
-def FilePrinter(f, length):
-    return truncate_middle(os.path.join(f.dir, f.name), length)
+def FilePrinter(f, query, length):
+    v = truncate_middle(os.path.join(f.dir, f.name), length)
+    i = v.lower().rfind(query.lower())
+    if query and i > -1:
+        left = v[:i]
+        lq = len(query)
+        highlight = v[i:i+lq]
+        right = v[i+lq:]
+        return [ left, CString(highlight, "green"), right ]
+    
+    return v
+

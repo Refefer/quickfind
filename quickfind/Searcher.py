@@ -1,5 +1,6 @@
 import sys, tty, termios, os
 import heapq
+from contextlib import contextmanager
 import curses
 
 class Output(object):
@@ -12,7 +13,7 @@ class Output(object):
     def printQuery(self, q):
         raise NotImplementedError()
 
-    def printItem(self, item, selected):
+    def printItem(self, item, selected, query):
         raise NotImplementedError()
 
     def flush(self):
@@ -37,9 +38,9 @@ class ScreenPrinter(Output):
     def printQuery(self, q):
         print "$ " + q
 
-    def printItem(self, idx, item, selected):
+    def printItem(self, idx, item, selected, query):
         prefix = "*" if selected else " "
-        print "%s - %s" % (prefix, self.printf(item))
+        print "%s - %s" % (prefix, self.printf(item, query))
 
     def flush(self):
         pass
@@ -51,11 +52,11 @@ class CursesPrinter(Output):
 
     def init(self):
         self.window = curses.initscr()
+        curses.start_color()
+        curses.use_default_colors()
         curses.noecho()
-        #curses.cbreak()
 
     def cleanup(self):
-        #curses.nocbreak()
         curses.echo()
         curses.endwin()
 
@@ -64,9 +65,27 @@ class CursesPrinter(Output):
         self.querylen = len(q)
         self.window.addstr(0, 0, q)
 
-    def printItem(self, idx, item, selected):
+    def printItem(self, idx, item, selected, query):
         flags = curses.A_BOLD if selected else curses.A_NORMAL
-        self.window.addstr(1 + idx , 0, self.printf(item), flags)
+        self.window.move(1 + idx, 0)
+        for t in self.convert(self.printf(item, query)):
+            if not t.text:
+                continue
+            if t.fcolor == t.bcolor == -1:
+                self.window.addstr(t.text, t.weight)
+            else:
+                curses.init_pair(1, t.fcolor, t.bcolor)
+                self.window.addstr(t.text, curses.color_pair(1) | t.weight)
+
+    def convert(self, text):
+        if not isinstance(text, list):
+            text = [text]
+
+        r = []
+        for t in text:
+            r.append(t if isinstance(t, CString) else CString(t))
+
+        return r
 
     def clear(self):
         self.window.clear()
@@ -74,7 +93,38 @@ class CursesPrinter(Output):
     def flush(self):
         self.window.move(0, self.querylen)
         self.window.refresh()
-        
+
+class CString(object):
+    __slots__ = ('text', 'fcolor', 'bcolor', "weight")
+    
+    colors = {
+        "default": -1, 
+        "black": curses.COLOR_BLACK,
+        "cyan": curses.COLOR_CYAN,
+        "magenta": curses.COLOR_MAGENTA,
+        "white": curses.COLOR_WHITE,
+        "blue": curses.COLOR_BLUE,
+        "green": curses.COLOR_GREEN,
+        "red": curses.COLOR_RED,
+        "yellow": curses.COLOR_YELLOW
+    }
+
+    weights = {
+        "alt": curses.A_ALTCHARSET,
+        "blink": curses.A_BLINK,
+        "bold": curses.A_BOLD,
+        "dim": curses.A_DIM,
+        "normal": curses.A_NORMAL,
+        "reverse": curses.A_REVERSE,
+        "standout": curses.A_STANDOUT,
+        "underlined": curses.A_UNDERLINE
+    }
+
+    def __init__(self, text, fcolor="default", bcolor="default", weight="normal"):
+        self.text = unicode(text)
+        self.fcolor = self.colors.get(fcolor, -1)
+        self.bcolor = self.colors.get(bcolor, -1)
+        self.weight = self.weights[weight]
 
 class CharInput(object):
     def __call__(self):
@@ -177,7 +227,7 @@ class Searcher(object):
         self.output.printQuery(cur)
         
         for i, item in enumerate(self._topItems(heap, N)):
-            self.output.printItem(i, item, i==selected)
+            self.output.printItem(i, item, i==selected, cur)
 
         self.output.flush()
 
