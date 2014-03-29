@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name='quickfind',
-      version="0.1.2.0",
+      version="0.1.2.2",
       description='Fuzzy find for the terminal',
       url="https://github.com/Refefer/quickfind",
       packages=['quickfind', 'quickfind/source'],
