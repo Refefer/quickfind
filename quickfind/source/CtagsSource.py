@@ -1,18 +1,26 @@
-import os
+from __future__ import print_function
+import os, sys
 from collections import namedtuple
-from Source import Source
+from .Source import Source
 from itertools import islice
 
 from quickfind.Searcher import Ranker,CString
-from Util import truncate_middle, truncate_front, highlight
+from .Util import truncate_middle, truncate_front, highlight
 
-import ctags
+try:
+    import ctags
+except ImportError:
+    ctags = None
 
 ENTRY_FIELDS = ("name", "file", "disp", "pattern", "lineNumber", "kind", "fileScope")
 Entry = namedtuple("Entry", ENTRY_FIELDS)
 
 class CtagsSource(Source):
     def __init__(self, filename):
+        if ctags is None:
+            print("`ctags` not found.  Ensure library 'python-ctags' is installed")
+            sys.exit(1)
+
         self.tag_file = ctags.CTags(filename)
         self.base_dir = os.path.split(filename)[0]
 

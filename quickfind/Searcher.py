@@ -1,9 +1,15 @@
+from __future__ import print_function
 import sys, tty, termios, os
-from itertools  import izip,repeat,imap
 import heapq
 from contextlib import contextmanager
 import curses
 import multiprocessing
+
+if sys.version_info.major >= 3:
+    textize = str
+else:
+    textize = lambda x: unicode(x, errors="ignore")
+
 
 class Output(object):
     def init(self):
@@ -46,17 +52,17 @@ class ScreenPrinter(Output):
         return self.cols, self.rows
 
     def clear(self):
-        print ""
+        print("")
 
     def printQuery(self, q):
-        print "$ " + q
+        print("$ " + q)
 
     def printItem(self, idx, item, selected, query):
         prefix = "*" if selected else " "
-        print "%s - %s" % (prefix, self.printf(item, query, self.dimensions()))
+        print("%s - %s" % (prefix, self.printf(item, query, self.dimensions())))
 
     def printCount(self, total, current):
-        print "[%s / %s]" % (current, total)
+        print("[%s / %s]" % (current, total))
 
     def flush(self):
         pass
@@ -157,7 +163,7 @@ class CString(object):
     }
 
     def __init__(self, text, fcolor="default", bcolor="default", weight="normal"):
-        self.text = unicode(text, errors="ignore")
+        self.text = textize(text)
         self.fcolor = self.colors.get(fcolor, -1)
         self.bcolor = self.colors.get(bcolor, -1)
         self.weight = self.weights[weight]

@@ -1,16 +1,19 @@
-import os, re, fnmatch
+import os, re, fnmatch, sys
 from collections import namedtuple
 from itertools import islice
 
-from Source import Source
+from .Source import Source
 from quickfind.Searcher import Ranker, CString
-from Util import truncate_middle, rec_dir_up, highlight
+from .Util import truncate_middle, rec_dir_up, highlight
 
 try:
     import fsnix.util as util
     walk = util.walk
 except ImportError:
     walk = os.walk
+
+if sys.version_info.major >= 3:
+    xrange = range
 
 File = namedtuple("File", "dir,name,sname")
 class DirectorySource(Source):
@@ -26,7 +29,7 @@ class DirectorySource(Source):
 
     def find_parent_gis(self):
         dirs = rec_dir_up(self.startDir)
-        dirs.next()
+        next(dirs)
         for dirname in dirs:
             pgi = os.path.join(dirname, '.gitignore')
             if os.path.isfile(pgi):
@@ -82,7 +85,7 @@ class GitIgnoreFilter(object):
         path_filters = []
         glob_filters = []
         exact_filters = set(['.git'])
-        with file(self.fn) as f:
+        with open(self.fn) as f:
             gc = self.globchars
             for fn in f:
                 if fn.startswith('#'): 
@@ -120,8 +123,8 @@ class GitIgnoreFilter(object):
                 dirmaps[dm] = [glob]
 
         # Build glob maps
-        for k, vs in dirmaps.iteritems():
-            dirmaps[k] = re.compile('|'.join(vs))
+        for k in dirmaps:
+            dirmaps[k] = re.compile('|'.join(dirmaps[k]))
 
         return dirmaps 
 
