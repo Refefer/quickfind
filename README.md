@@ -10,6 +10,10 @@ To install from Pypi:
 
     pip install quickfind
 
+To install the faster version with ctags from Pypi:
+
+    pip install quickfind[ctags,fsnix]
+
 To install from source, clone the repo and type:
 
     python setup.py install
