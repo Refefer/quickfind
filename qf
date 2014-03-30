@@ -102,7 +102,7 @@ def build_arg_parser():
 
     return parser.parse_args()
 
-if __name__ == '__main__':
+def main():
     args = build_arg_parser()
     if args.c:
         runner = CtagsRun(args)
@@ -110,3 +110,6 @@ if __name__ == '__main__':
         runner = DirRun(args)
 
     runner.run()
+
+if __name__ == '__main__':
+    main()
