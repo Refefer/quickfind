@@ -111,11 +111,10 @@ class GitIgnoreFilter(object):
         # We can currently glob on only filename positions
         dirmaps = {}
         for pf in path_filters:
-            while pf.endswith('/'):
-                pf = pf[:-1]
+            pf = pf.rstrip("/")
 
             dirname, basename = os.path.split(pf)
-            dm = os.path.join(self.dirname, dirname.lstrip('/'))
+            dm = os.path.join(self.dirname, dirname.lstrip('/')).rstrip('/')
             glob = fnmatch.translate(basename.strip())
             if dm in dirmaps:
                 dirmaps[dm].append(glob)
