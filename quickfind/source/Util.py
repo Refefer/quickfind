@@ -46,7 +46,7 @@ def highlight(v, query, color="green"):
 class StringRanker(Ranker):
 
     ws_query = False
-    weight_f = lambda x: len(x) ** .5
+    weight_f = lambda x: 0
 
     def __init__(self, query):
         self.qs = query.lower()
@@ -74,7 +74,7 @@ class StringRanker(Ranker):
         return score
 
     def rank(self, item):
-        part = self.get_part(item)
+        part = self.get_part(item).lower()
 
         agg_score = 0.0
         for q in self.qs:
