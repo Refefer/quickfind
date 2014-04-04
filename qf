@@ -83,7 +83,12 @@ class CtagsRun(Runner):
             found = s.run(items)
         except KeyboardInterrupt:
             sys.exit(0)
+
         if found is not None:
+            if self.args.e == "%s {1}" % os.environ['EDITOR'] and found.pattern.isdigit():
+                self.args.e = '%s +{2} {1}' % os.environ['EDITOR']
+                return "%s %s" % (found.file, found.pattern)
+
             return found.file
 
     def find_ctag_file(self):
@@ -107,7 +112,7 @@ def build_arg_parser():
             action="store_true", help='White space separates multiple queries')
     parser.add_argument('-p', 
             action="store_true", help='Match also on path')
-    parser.add_argument('-e', default="%s {}" % os.environ['EDITOR'],
+    parser.add_argument('-e', default="%s {1}" % os.environ['EDITOR'],
             help="Command to execute on selection.  Default is '$EDITOR {}'.")
     parser.add_argument('-', dest='stdin',
             action="store_true", help="Reads from stdin.")
