@@ -275,12 +275,21 @@ class Searcher(object):
         self.output.flush()
 
 
+    @contextmanager
+    def redirStdout(self):
+        stdout = os.dup(sys.stdout.fileno())
+        os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
+        yield
+        os.dup2(stdout, sys.stdout.fileno())
+
     def run(self, items):
-        self.output.init()
-        try:
-            heap = [(0, i) for i in items]
-            heap.sort()
-            self._echo("", heap, 0, len(items))
-            return self._loop([heap], self.output.getChar)
-        finally:
-            self.output.cleanup()
+        with self.redirStdout():
+            self.output.init()
+            try:
+                heap = [(0, i) for i in items]
+                heap.sort()
+                self._echo("", heap, 0, len(items))
+                return self._loop([heap], self.output.getChar)
+            finally:
+                self.output.cleanup()
+

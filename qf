@@ -118,7 +118,8 @@ def build_arg_parser():
             action="store_true", help="Reads from stdin.")
     parser.add_argument('-D', dest='delim', default=None,
             help="Delimiter for {}-style parsing.")
-            
+    parser.add_argument('-o', dest='stdout', action="store_true",
+            help="Writes the selection to stdout")
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-d', action="store_const", dest="fileType", const="dirs",
@@ -143,6 +144,8 @@ def main():
         if args.s is not None:
             with file(args.s, 'w') as f:
                  f.write(item)
+        elif args.stdout:
+            print(item)
         else:
             formatted = args.e.format(item, *item.split(args.delim))
             pieces = shlex.split(formatted)
