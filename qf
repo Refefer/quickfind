@@ -19,16 +19,6 @@ class Runner(object):
     def find(self):
         raise NotImplementedError()
 
-    def run(self):
-        filename = self.find()
-        if filename is not None:
-            if self.args.s is not None:
-                with file(self.args.s, 'w') as f:
-                     f.write(filename)
-            else:
-                v = os.environ['EDITOR']
-                os.execvp(v, [v, filename])      
-
 class DirRun(Runner):
 
     def find(self):
@@ -58,8 +48,8 @@ class DirRun(Runner):
 class StdinRun(Runner):
     def fetch(self):
         results = []
-        for line in sys.stdin:
-            results.append(line.strip())
+        for i,line in enumerate(sys.stdin):
+            results.append((i, line.strip()))
 
         # reopen stdin
         f = open("/dev/tty")
@@ -69,14 +59,15 @@ class StdinRun(Runner):
     def find(self):
 
         items = self.fetch()
-        sr = StringRanker.new(self.args.w, get_part=lambda _, x: x)
-        s = Searcher(sr, CursesPrinter(simpleFormatter))
+        sr = StringRanker.new(self.args.w, get_part=lambda _, x: x[1])
+        s = Searcher(sr, CursesPrinter(lambda x,q,d: simpleFormatter(x[1], q,d)))
         try:
             found = s.run(items)
         except KeyboardInterrupt:
             sys.exit(0)
 
-        return found 
+        if found is not None:
+            return found[1]
 
 class CtagsRun(Runner):
 
@@ -120,6 +111,8 @@ def build_arg_parser():
             help="Command to execute on selection.  Default is '$EDITOR {}'.")
     parser.add_argument('-', dest='stdin',
             action="store_true", help="Reads from stdin.")
+    parser.add_argument('-D', dest='delim', default=None,
+            help="Delimiter for {}-style parsing.")
             
 
     group = parser.add_mutually_exclusive_group()
@@ -140,13 +133,14 @@ def main():
     else:
         runner = DirRun(args)
 
-    filename = runner.find()
-    if filename is not None:
+    item = runner.find()
+    if item is not None:
         if args.s is not None:
             with file(args.s, 'w') as f:
-                 f.write(filename)
+                 f.write(item)
         else:
-            pieces = shlex.split(args.e.format(filename))
+            formatted = args.e.format(item, *item.split(args.delim))
+            pieces = shlex.split(formatted)
             os.execvp(pieces[0], pieces)      
 
 if __name__ == '__main__':
