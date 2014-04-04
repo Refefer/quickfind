@@ -1,8 +1,8 @@
 quickfind
 =========
 
-Fuzzy finder for the terminal.  `quickfind` can search both files in the file system
-or a ctags file.  
+Fuzzy finder for the terminal.  `quickfind` can search files in the file system, ctags files, or anything that can pipe.
+
 Install
 -------
 
@@ -25,7 +25,7 @@ To install from source, clone the repo and type:
 To Use
 ------
 
-_quickfind_ has two forms: File search and CTags search, with File search as default.  
+_quickfind_ has two builtin forms: File search and CTags search, with File search as default.  
 
 After installation, a new executable is added to the path 'qf'.  To use: 
 
@@ -39,6 +39,24 @@ in a tree's .gitignore.
 
 Up and Down arrow keys selects which file to open.  Enter opens the current file with $EDITOR.
 If -s FILENAME is specified, quickfind writes the selected file to disk.
+
+Stdin
+-----
+_quickfind_ can search on stdin when provided a naked '-':
+    
+    find . -type f | qf -
+
+_quickfind_ can further be extended to execute custom commands after an item as been selected
+
+    # To view man a file
+    mank -k . | qf - -e "{1}"
+
+Commands
+--------
+By default, _quickfind_ will execute "$EDITOR {0}", where "{0}" represents the entire 
+selected record.  In "{N}", N represents the Nth piece split by the delimiter specified
+by -D.  By default, the delimiter is whitespace.
+
 
 Tricks
 -----
