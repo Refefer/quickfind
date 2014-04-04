@@ -21,6 +21,9 @@ class Output(object):
     def clear(self):
         raise NotImplementedError()
 
+    def getChr(self):
+        raise NotImplementedError()
+
     def printQuery(self, q):
         raise NotImplementedError()
 
@@ -41,6 +44,7 @@ class ScreenPrinter(Output):
         self.printf = printf
         self.cols = cols
         self.rows = rows
+        self.getChar = GetchUnix()
 
     def init(self):
         pass
@@ -71,9 +75,11 @@ class CursesPrinter(Output):
     def __init__(self, printf):
         self.printf = printf
         self.querylen = 0
+        self.getChar = GetchUnix()
 
     def init(self):
         self.window = curses.initscr()
+        self.window.nodelay(0)
         curses.start_color()
         curses.use_default_colors()
         curses.noecho()
@@ -168,11 +174,7 @@ class CString(object):
         self.bcolor = self.colors.get(bcolor, -1)
         self.weight = self.weights[weight]
 
-class CharInput(object):
-    def __call__(self):
-        raise NotImplementedError()
-
-class GetchUnix(CharInput):
+class GetchUnix(object):
     def __init__(self):
         import tty, sys
         self.fd = sys.stdin.fileno()
@@ -273,12 +275,12 @@ class Searcher(object):
         self.output.flush()
 
 
-    def run(self, items, input=GetchUnix):
+    def run(self, items):
         self.output.init()
         try:
             heap = [(0, i) for i in items]
             heap.sort()
             self._echo("", heap, 0, len(items))
-            return self._loop([heap], GetchUnix())
+            return self._loop([heap], self.output.getChar)
         finally:
             self.output.cleanup()

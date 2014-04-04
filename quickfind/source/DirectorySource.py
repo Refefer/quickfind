@@ -4,7 +4,7 @@ from itertools import islice
 
 from .Source import Source
 from quickfind.Searcher import Ranker, CString
-from .Util import truncate_middle, rec_dir_up, highlight
+from .Util import truncate_middle, rec_dir_up, highlight, StringRanker, simpleFormatter 
 
 try:
     import fsnix.util as util
@@ -28,16 +28,18 @@ class DirectorySource(Source):
             self.find_parent_gis()
 
     def find_parent_gis(self):
-        dirs = rec_dir_up(self.startDir)
+        dirs = rec_dir_up(os.path.abspath(self.startDir))
         next(dirs)
         for dirname in dirs:
             pgi = os.path.join(dirname, '.gitignore')
             if os.path.isfile(pgi):
-                self.filters.append(GitIgnoreFilter(dirname, '.gitignore'))
+                self.filters.append((dirname, GitIgnoreFilter(dirname, '.gitignore')))
+
         self.filters.reverse()
 
     def fetch(self):
         lst = []
+        ap = os.path.abspath
         for dirname, dirs, filenames in walk(self.startDir):
             names = []
             if not self.ignore_files:
@@ -45,30 +47,29 @@ class DirectorySource(Source):
             if not self.ignore_directories:
                 names.extend(dirs)
 
+            abspath = ap(dirname)
             if self.git_ignore and '.gitignore' in filenames:
-                gif = GitIgnoreFilter(dirname, '.gitignore')
-                self.filters.append((dirname, gif))
+                gif = GitIgnoreFilter(abspath, '.gitignore')
+                self.filters.append((abspath, gif))
 
             while self.filters:
                 path, _ = self.filters[-1]
-                if dirname.startswith(path): break
+                if abspath.startswith(path): break
                 self.filters.pop()
 
-            fltr = None
-            if self.filters:
-                fltr = self.filters[-1][1]
+            fltr = self.filters[-1][1] if self.filters else None
             
             if fltr is None:
                 files = (File(dirname, name, name.lower()) for name in names)
             else:
                 files = (File(dirname, name, name.lower()) 
-                        for name in names if fltr(name, dirname))
+                        for name in names if fltr(name, abspath))
             lst.extend(files)
 
             # have to delete the names manually
             if fltr is not None:
                 for i in xrange(len(dirs) - 1, -1, -1):
-                    if not fltr(dirs[i], dirname):
+                    if not fltr(dirs[i], abspath):
                         del dirs[i]
 
         return lst
@@ -144,54 +145,18 @@ class GitIgnoreFilter(object):
 
         return True
 
-class SimpleRanker(Ranker):
-
-    ws_query = False
-    inc_path = False
-
-    def __init__(self, query):
-        self.qs = query.lower()
-        if self.ws_query:
-            self.qs = self.qs.split()
-        else:
-            self.qs = [self.qs]
-
-    def rank_part(self, q, part):
-        if q not in part:
-            return None
-
-        # Don't do more interesting ranking with one character
-        lq = len(q)
-        lp = len(part)
-        if lq == 1:
-            return lp
-
-        score = (lp) ** 0.5
-        score -= 1.0 if part.startswith(q) else 0.0
-        score -= 1.0 if part.endswith(q) else 0.0
-        return score
+def ranker(ws_query, inc_path):
 
     def rank(self, item):
         if self.inc_path:
-            part = os.path.join(item.dir.lower(), item.sname)
+            return os.path.join(item.dir.lower(), item.sname)
         else:
-            part = item.sname
+            return item.sname
 
-        agg_score = 0.0
-        for q in self.qs:
-            score = self.rank_part(q, part)
-            if score is None:
-                return None
-            agg_score += score
-        
-        return agg_score + item.dir.count(os.sep) ** 0.5
-    
-    @staticmethod
-    def new(ws_query, inc_path):
-        return type('SimpleRanker', (SimpleRanker,), 
-                    dict(ws_query=ws_query, inc_path=inc_path))
+    weight = lambda _, s: s.dir.count(os.sep) ** 0.5
+    return StringRanker.new(ws_query, weight, inc_path=inc_path, get_part=rank)
 
-def formatter(f, query, dims):
-    v = truncate_middle(os.path.join(f.dir, f.name), dims[0])
-    return highlight(v, query)
+
+def dirFormatter(f, query, dims):
+    return simpleFormatter(os.path.join(f.dir, f.name), query, dims)
 
