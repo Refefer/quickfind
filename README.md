@@ -37,8 +37,7 @@ and start typing!  _quickfind_ can be configured to match against file name and/
 while selecting either files, directories, or both.  By default, it filters out files listed
 in a tree's .gitignore.
 
-Up and Down arrow keys selects which file to open.  Enter opens the current file with $EDITOR.
-If -s FILENAME is specified, quickfind writes the selected file to disk.
+Up and Down arrow keys selects which file to open.  Enter opens selects the highlighted file.
 
 Stdin
 -----

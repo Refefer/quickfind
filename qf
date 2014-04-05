@@ -106,8 +106,6 @@ def build_arg_parser():
     parser = argparse.ArgumentParser(description='Quickfind on various archives.')
     parser.add_argument('-c', 
             action="store_true", help='Ctags quickfind')
-    parser.add_argument('-s', 
-            help='Writes the file to provided file instead of executing it.')
     parser.add_argument('-g', 
             action="store_false", help='Do not filter out files in .gitignore')
     parser.add_argument('-w', 
@@ -148,10 +146,7 @@ def main():
     item = runner.find()
     if item is not None:
         formatted = args.f.format(item, *item.split(args.delim))
-        if args.s is not None:
-            with file(args.s, 'w') as f:
-                 f.write(formatted)
-        elif args.stdout:
+        if args.stdout:
             print(formatted)
         else:
             pieces = shlex.split(formatted)
