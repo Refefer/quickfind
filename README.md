@@ -47,40 +47,43 @@ _quickfind_ can search on stdin when provided a naked '-':
     find . -type f | qf -
 
 _quickfind_ can further be extended to execute custom commands after an item as been selected
+    # To kill a process
+    ps aux | qf - -f "kill -9 {2}"
 
+_quickfind_ similarly can output to stdout with the '-o' flag rather than exec-ing the 
+formatted command:
+    
     # To view man a file
-    man -k . | qf - -f "man {1}"
+    man $(man -k . | qf - -f "man {1}" -o)
 
 Commands
 --------
 By default, _quickfind_ will execute "$EDITOR {0}", where "{0}" represents the entire 
 selected record.  In "{N}", N represents the Nth piece split by the delimiter specified
-by -D.  By default, the delimiter is whitespace.
-
+by -D.  By default, the delimiter is whitespace.  
 
 Tricks
 -----
 Add to your .bashrc:
 
-    bind '"\C-f": "qf\n"'
+    bind '"\C-f": "qf -w\n"'
 
 to add ctrl+f as a qf hotkey.
 
 Add to your .bashrc:
 
-    function goto() {
-        _OFILE=/tmp/qf.$$
-        qf -d -s $_OFILE
-        if [ -f $_OFILE ]; then
-            cd `cat $_OFILE`
-            rm $_OFILE
+    function qcd() {
+        _OFILE=$(qf -d -o -f "{0}")
+        if [ -n $_OFILE ]; then
+            cd $_OFILE
         fi
         unset _OFILE
     }
 
-to enable a new bash command, 'goto', for quickly cd-ing to a directory.
+to enable a new bash command, 'qcd', for quickly cd-ing to a directory.
 
-Have a lot of files with similar names?  Add the '-w' flag to allow multiple searchers.  '-w'
-splits queries by white space: a query for "hello world" would result in two filters: 
-"hello" and "world", requiring a file to match both.  This can be useful for specifying 
-part of a filename and then the file extension.
+Add to your .bashrc:
+
+alias qkill="ps aux | qf - -f 'kill -f {2}'
+
+for easy process killing.

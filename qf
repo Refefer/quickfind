@@ -100,7 +100,7 @@ class CtagsRun(Runner):
 
         return None
 
-DEFAULT_COMMAND = "%s {1}" % os.environ['EDITOR']
+DEFAULT_COMMAND = "%s {0}" % os.environ['EDITOR']
 
 def build_arg_parser():
     parser = argparse.ArgumentParser(description='Quickfind on various archives.')
@@ -116,7 +116,7 @@ def build_arg_parser():
             action="store_true", help='Match also on path')
     parser.add_argument('-f', default=DEFAULT_COMMAND,
             help="Format of the output.  When the '-o' flag is provided, defaults to " \
-                 "'{1}'.  When File mode is specified, executes '$EDITOR {1}'.")
+                 "'{1}'.  When File mode is specified, executes '$EDITOR {0}'.")
     parser.add_argument('-', dest='stdin',
             action="store_true", help="Reads from stdin.")
     parser.add_argument('-D', dest='delim', default=None,
@@ -136,7 +136,7 @@ def build_arg_parser():
 def main():
     args = build_arg_parser()
     if args.stdout and args.f == DEFAULT_COMMAND:
-        args.f = "{1}"
+        args.f = "{0}"
 
     if args.c:
         runner = CtagsRun(args)
