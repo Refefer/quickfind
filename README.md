@@ -73,12 +73,11 @@ Tricks
 -----
 Add to your .bashrc:
 
+    # To add ctrl+f as a qf hotkey.
+
     bind '"\C-f": "qf -w\n"'
 
-to add ctrl+f as a qf hotkey.
-
-Add to your .bashrc:
-
+    # To enable a new bash command, 'qcd', for quickly cd-ing to a directory.
     function qcd() {
         _OFILE=$(qf -d -o -f "{0}")
         if [ -n $_OFILE ]; then
@@ -87,10 +86,6 @@ Add to your .bashrc:
         unset _OFILE
     }
 
-to enable a new bash command, 'qcd', for quickly cd-ing to a directory.
-
-Add to your .bashrc:
-
+    # To easily kill processes
     alias qkill="ps aux | qf - -f 'kill -f {2}'
 
-for easy process killing.
