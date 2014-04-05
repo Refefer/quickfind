@@ -49,7 +49,7 @@ _quickfind_ can search on stdin when provided a naked '-':
 _quickfind_ can further be extended to execute custom commands after an item as been selected
 
     # To view man a file
-    mank -k . | qf - -e "{1}"
+    man -k . | qf - -f "man {1}"
 
 Commands
 --------
