@@ -84,6 +84,6 @@ to enable a new bash command, 'qcd', for quickly cd-ing to a directory.
 
 Add to your .bashrc:
 
-alias qkill="ps aux | qf - -f 'kill -f {2}'
+    alias qkill="ps aux | qf - -f 'kill -f {2}'
 
 for easy process killing.
