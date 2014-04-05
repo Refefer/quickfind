@@ -62,6 +62,14 @@ By default, _quickfind_ will execute "$EDITOR {0}", where "{0}" represents the e
 selected record.  In "{N}", N represents the Nth piece split by the delimiter specified
 by -D.  By default, the delimiter is whitespace.  
 
+
+Vim
+---
+A basic vim plugin has been developed to open files up with _quickfind_.  To install,
+copy `plugin/qf.vim` to your vim plugin directory (usually ~/.vim/plugin/).  To use,
+simply type `:QF` in normal mode to open up the _quickfind_ daemon and choose the file
+to open.
+
 Tricks
 -----
 Add to your .bashrc:
