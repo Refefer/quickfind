@@ -1,6 +1,6 @@
 function! QuickFind()
   let tmpfile=tempname()
-  let command = "qf -w -o > " . tmpfile
+  let command = "qf -o > " . tmpfile
   execute "silent !".command
 
   if !filereadable(tmpfile)
