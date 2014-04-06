@@ -34,7 +34,7 @@ class DirRun(Runner):
 
         items = ds.fetch()
 
-        sr = ranker(self.args.w, self.args.p)
+        sr = ranker(self.args.p)
         s = Searcher(sr, CursesPrinter(dirFormatter))
         try:
             found = s.run(items)
@@ -59,7 +59,7 @@ class StdinRun(Runner):
     def find(self):
 
         items = self.fetch()
-        sr = StringRanker.new(self.args.w, get_part=lambda _, x: x[1])
+        sr = StringRanker.new(get_part=lambda _, x: x[1])
         s = Searcher(sr, CursesPrinter(lambda x,q,d: simpleFormatter(x[1], q,d)))
         try:
             found = s.run(items)
@@ -108,8 +108,6 @@ def build_arg_parser():
             action="store_true", help='Ctags quickfind')
     parser.add_argument('-g', 
             action="store_false", help='Do not filter out files in .gitignore')
-    parser.add_argument('-w', 
-            action="store_true", help='White space separates multiple queries')
     parser.add_argument('-p', 
             action="store_true", help='Match also on path')
     parser.add_argument('-f', default=DEFAULT_COMMAND,

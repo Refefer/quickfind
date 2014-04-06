@@ -145,7 +145,7 @@ class GitIgnoreFilter(object):
 
         return True
 
-def ranker(ws_query, inc_path):
+def ranker(inc_path):
 
     def rank(self, item):
         if self.inc_path:
@@ -154,7 +154,7 @@ def ranker(ws_query, inc_path):
             return item.sname
 
     weight = lambda _, s: s.dir.count(os.sep) ** 0.5
-    return StringRanker.new(ws_query, weight, inc_path=inc_path, get_part=rank)
+    return StringRanker.new(weight, inc_path=inc_path, get_part=rank)
 
 
 def dirFormatter(f, query, dims):

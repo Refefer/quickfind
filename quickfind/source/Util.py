@@ -45,13 +45,12 @@ def highlight(v, query, color="green"):
 
 class StringRanker(Ranker):
 
-    ws_query = False
     weight_f = lambda x: 0
 
     def __init__(self, query):
         self.qs = query.lower()
-        if self.ws_query:
-            self.qs = self.qs.split()
+        if '\t' in self.qs:
+            self.qs = [q for q in self.qs.split('\t') if q]
         else:
             self.qs = [self.qs]
 
@@ -86,8 +85,7 @@ class StringRanker(Ranker):
         return agg_score + self.weight_f(item)
     
     @staticmethod
-    def new(ws_query, weight_f=lambda *x: 0, **kwargs):
-        kwargs['ws_query'] = ws_query
+    def new(weight_f=lambda *x: 0, **kwargs):
         kwargs['weight_f'] = weight_f
         return type('StringRanker', (StringRanker,), kwargs)
 

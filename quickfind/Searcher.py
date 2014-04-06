@@ -72,10 +72,13 @@ class ScreenPrinter(Output):
         pass
 
 class CursesPrinter(Output):
+    
     def __init__(self, printf):
         self.printf = printf
         self.querylen = 0
         self.getChar = GetchUnix()
+        self.colors = {}
+        self.TAB = CString("~", fcolor="red")
 
     def init(self):
         self.window = curses.initscr()
@@ -94,8 +97,28 @@ class CursesPrinter(Output):
 
     def printQuery(self, query):
         q = "$ " + query
+        newQ = []
+        for p in q.split('\t'):
+            newQ.extend((p, self.TAB))
+        newQ = self.convert(newQ[:-1])
+
         self.querylen = len(q)
-        self.window.addstr(0, 0, q)
+        for nq in newQ:
+            self._printText(nq, len(q))
+    
+    def _printText(self, t, maxX, flags=curses.A_NORMAL):
+        text = t.text[:(maxX - self.window.getyx()[1])]
+        if not text: return
+        if t.fcolor == t.bcolor == -1:
+            self.window.addstr(text, t.weight | flags)
+        else:
+            cp = (t.fcolor, t.bcolor)
+            if cp not in self.colors:
+                num = 1 if not self.colors else max(self.colors.values()) + 1 
+                self.colors[cp] = num
+                curses.init_pair(num, t.fcolor, t.bcolor)
+
+            self.window.addstr(text, curses.color_pair(self.colors[cp]) | t.weight | flags)
 
     def printItem(self, idx, item, selected, query):
         flags = curses.A_BOLD if selected else curses.A_NORMAL
@@ -104,20 +127,7 @@ class CursesPrinter(Output):
         num = 1
         x, y = self.dimensions()
         for t in self.convert(self.printf(item, query, (x,y))):
-            text = t.text[:(x - self.window.getyx()[1])]
-            if not text: continue
-            if t.fcolor == t.bcolor == -1:
-                self.window.addstr(text, t.weight | flags)
-            else:
-                cp = (t.fcolor, t.bcolor)
-                if cp not in colors:
-                    colors[cp] = num
-                    curses.init_pair(num, t.fcolor, t.bcolor)
-                    num += 1
-                    if not num % 8:
-                        num = 1
-
-                self.window.addstr(text, curses.color_pair(colors[cp]) | t.weight | flags)
+            self._printText(t, x, flags)
 
     def printCount(self, total, current):
         x, y = self.dimensions()
@@ -137,6 +147,7 @@ class CursesPrinter(Output):
 
     def clear(self):
         self.window.clear()
+        self.colors.clear()
 
     def flush(self):
         self.window.move(0, self.querylen)
