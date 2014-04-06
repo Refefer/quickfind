@@ -85,11 +85,13 @@ class CtagsRun(Runner):
             sys.exit(0)
 
         if found is not None:
-            if self.args.f == DEFAULT_COMMAND and found.pattern.isdigit():
-                self.args.f = '%s +{2} {1}' % os.environ['EDITOR']
-                return "%s %s" % (found.file, found.pattern)
+            if self.args.f == DEFAULT_COMMAND:
+                if found.pattern.isdigit():
+                    self.args.f = '%s +{2} {1}' % os.environ['EDITOR']
+                else:
+                    self.args.f = '{1}'
 
-            return found.file
+            return "%s %s" % (found.file, found.pattern)
 
     def find_ctag_file(self):
         directory = os.getcwd()
@@ -103,7 +105,7 @@ class CtagsRun(Runner):
 DEFAULT_COMMAND = "%s {0}" % os.environ['EDITOR']
 
 def build_arg_parser():
-    parser = argparse.ArgumentParser(description='Quickfind on various archives.')
+    parser = argparse.ArgumentParser(description='A Fuzzy-finder for the terminally inclined')
     parser.add_argument('-c', 
             action="store_true", help='Ctags quickfind')
     parser.add_argument('-g', 

@@ -91,3 +91,6 @@ Add to your .bashrc:
     # To easily kill processes
     alias qkill="ps aux | qf - -f 'kill -f {2}'
 
+    # To easily git add a file
+    alias gadd="git status --porcelain | egrep '^.M|^\?' | qf - -f 'git add {2}'"
+
