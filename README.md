@@ -39,6 +39,8 @@ in a tree's .gitignore.
 
 Up and Down arrow keys selects which file to open.  Enter opens selects the highlighted file.
 
+Sometimes a single query isn't enough to differentiate between the files.  By pressing Tab, _quickfind_ will add another 'searcher' query for additional filtering.
+
 Stdin
 -----
 _quickfind_ can search on stdin when provided a naked '-':
@@ -75,7 +77,7 @@ Add to your .bashrc:
 
     # To add ctrl+f as a qf hotkey.
 
-    bind '"\C-f": "qf -w\n"'
+    bind '"\C-f": "qf\n"'
 
     # To enable a new bash command, 'qcd', for quickly cd-ing to a directory.
     function qcd() {
