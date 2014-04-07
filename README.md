@@ -69,7 +69,7 @@ Vim
 A basic vim plugin has been developed to open files up with _quickfind_.  To install,
 copy `plugin/qf.vim` to your vim plugin directory (usually ~/.vim/plugin/).  To use,
 simply type `:QF` in normal mode to open up the _quickfind_ daemon and choose the file
-to open.
+to open.  :TS triggers _quickfind_ with ctags.
 
 Tricks
 -----
@@ -89,7 +89,7 @@ Add to your .bashrc:
     }
 
     # To easily kill processes
-    alias qkill="ps aux | qf - -f 'kill -f {2}'
+    alias qkill="ps aux | qf - -f 'kill -f {2}'"
 
     # To easily git add a file
     alias gadd="git status --porcelain | egrep '^.M|^\?' | qf - -f 'git add {2}'"
