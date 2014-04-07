@@ -85,11 +85,10 @@ class CtagsRun(Runner):
             sys.exit(0)
 
         if found is not None:
-            if self.args.f == DEFAULT_COMMAND:
-                if found.pattern.isdigit():
-                    self.args.f = '%s +{2} {1}' % os.environ['EDITOR']
-                else:
-                    self.args.f = '{1}'
+            if self.args.f == DEFAULT_COMMAND and found.pattern.isdigit():
+                self.args.f = '%s +{2} {1}' % os.environ['EDITOR']
+            else:
+                self.args.f = '{1}'
 
             return "%s %s" % (found.file, found.pattern)
 
