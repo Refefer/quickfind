@@ -27,7 +27,7 @@ class Output(object):
     def printQuery(self, q):
         raise NotImplementedError()
 
-    def printItem(self, item, selected, query):
+    def printItem(self, item, highlighted, selected, query):
         raise NotImplementedError()
 
     def printCount(self, total, current):
@@ -61,8 +61,9 @@ class ScreenPrinter(Output):
     def printQuery(self, q):
         print("$ " + q)
 
-    def printItem(self, idx, item, selected, query):
+    def printItem(self, idx, item, highlighted, selected, query):
         prefix = "*" if selected else " "
+        prefix  = prefix + "> " if highlighted else prefix 
         print("%s - %s" % (prefix, self.printf(item, query, self.dimensions())))
 
     def printCount(self, total, current):
@@ -120,8 +121,11 @@ class CursesPrinter(Output):
 
             self.window.addstr(text, curses.color_pair(self.colors[cp]) | t.weight | flags)
 
-    def printItem(self, idx, item, selected, query):
-        flags = curses.A_BOLD if selected else curses.A_NORMAL
+    def printItem(self, idx, item, highlighted, selected, query):
+        flags = curses.A_BOLD if highlighted else curses.A_NORMAL
+        if selected:
+            flags |= curses.A_UNDERLINE
+
         self.window.move(1 + idx, 0)
         colors = {}
         num = 1
@@ -193,7 +197,7 @@ class GetchUnix(object):
     def __call__(self):
         old_settings = termios.tcgetattr(self.fd)
         try:
-            tty.setraw(sys.stdin.fileno())
+            tty.setraw(self.fd)
             ch = sys.stdin.read(1)
         finally:
             termios.tcsetattr(self.fd, termios.TCSADRAIN, old_settings)
@@ -207,9 +211,10 @@ class Ranker(object):
         raise NotImplementedError()
 
 class Searcher(object):
-    def __init__(self, ranker, output):
+    def __init__(self, ranker, output, multiselect=False):
         self.ranker = ranker
         self.output = output
+        self.multiselect = multiselect
 
     def _ranker(self, ranker, curHeap):
         for w, item in curHeap:
@@ -230,7 +235,8 @@ class Searcher(object):
         heapq.heapify(curHeaps[0])
 
         cur = ""
-        selected = 0
+        highlighted = 0
+        selections = []
         while True:
             nextchar = getchar()
             cols, rows = self.output.dimensions()
@@ -243,21 +249,29 @@ class Searcher(object):
                 # Up/down
                 if nextchar == 66:
                     itemsShown = min(rows, len(curHeaps[-1])) - 1
-                    selected = min(itemsShown, selected + 1)
+                    highlighted = min(itemsShown, highlighted + 1)
                 elif nextchar == 65:
-                    selected = max(0, selected - 1)
+                    highlighted = max(0, highlighted - 1)
 
-            else :
                 # Selected
-                if nextchar == '\r':
-                    h = self._topItems(curHeaps[-1], selected + 1)
-                    try:
-                        return h[selected]
-                    except IndexError:
-                        return None
+            elif nextchar == '\r':
+                h = self._topItems(curHeaps[-1], highlighted + 1)
+                try:
+                    selections.append(h[highlighted])
+                except IndexError:
+                    pass
 
-                selected = 0
+                if not self.multiselect:
+                    return selections
+
+            else:
+
+                highlighted = 0
                 
+                # Multiselect return
+                if ord(nextchar) == 4 and self.multiselect:
+                    return selections
+
                 # Escape code
                 if ord(nextchar) in (3,4, 28, 26):
                     raise KeyboardInterrupt()
@@ -271,16 +285,17 @@ class Searcher(object):
                     cur += nextchar
                     curHeaps.append(self._newHeap(cur, curHeaps[-1]))
 
-            self._echo(cur, curHeaps[-1], selected, len(curHeaps[0]))
+            self._echo(cur, curHeaps[-1], highlighted, selections, len(curHeaps[0]))
 
-    def _echo(self, query, heap, selected, totalItems):
+    def _echo(self, query, heap, highlighted, selections, totalItems):
         self.output.clear()
         self.output.printQuery(query)
 
         cols, rows = self.output.dimensions()
         
+        s = set(selections)
         for i, item in enumerate(self._topItems(heap, rows-2)):
-            self.output.printItem(i, item, i==selected, query)
+            self.output.printItem(i, item, i==highlighted, item in s, query)
 
         self.output.printCount(totalItems, len(heap))
         self.output.flush()
@@ -299,7 +314,7 @@ class Searcher(object):
             try:
                 heap = [(0, i) for i in items]
                 heap.sort()
-                self._echo("", heap, 0, len(items))
+                self._echo("", heap, 0, [], len(items))
                 return self._loop([heap], self.output.getChar)
             finally:
                 self.output.cleanup()

@@ -35,15 +35,13 @@ class DirRun(Runner):
         items = ds.fetch()
 
         sr = ranker(self.args.p)
-        s = Searcher(sr, CursesPrinter(dirFormatter))
+        s = Searcher(sr, CursesPrinter(dirFormatter), self.args.multiselect)
         try:
             found = s.run(items)
         except KeyboardInterrupt:
             sys.exit(0)
 
-        if found is not None:
-            found = os.path.join(found.dir, found.name)
-        return found 
+        return [os.path.join(f.dir, f.name) for f in found]
 
 class StdinRun(Runner):
     def fetch(self):
@@ -60,14 +58,14 @@ class StdinRun(Runner):
 
         items = self.fetch()
         sr = StringRanker.new(get_part=lambda _, x: x[1])
-        s = Searcher(sr, CursesPrinter(lambda x,q,d: simpleFormatter(x[1], q,d)))
+        output = CursesPrinter(lambda x,q,d: simpleFormatter(x[1], q,d))
+        s = Searcher(sr, output, self.args.multiselect)
         try:
             found = s.run(items)
         except KeyboardInterrupt:
             sys.exit(0)
 
-        if found is not None:
-            return found[1]
+        return [f[1] for f in found]
 
 class CtagsRun(Runner):
 
@@ -84,13 +82,12 @@ class CtagsRun(Runner):
         except KeyboardInterrupt:
             sys.exit(0)
 
-        if found is not None:
-            if self.args.f == DEFAULT_COMMAND and found.pattern.isdigit():
-                self.args.f = '%s +{2} {1}' % os.environ['EDITOR']
-            else:
-                self.args.f = '{1}'
+        if self.args.f == DEFAULT_COMMAND and found.pattern.isdigit():
+            self.args.f = '%s +{2} {1}' % os.environ['EDITOR']
+        else:
+            self.args.f = '{1}'
 
-            return "%s %s" % (found.file, found.pattern)
+        return ["%s %s" % (found.file, found.pattern)]
 
     def find_ctag_file(self):
         directory = os.getcwd()
@@ -120,6 +117,10 @@ def build_arg_parser():
             help="Delimiter for {}-style parsing.")
     parser.add_argument('-o', dest='stdout', action="store_true",
             help="Writes the selection to stdout")
+    parser.add_argument('-m', dest="multiselect", action="store_true",
+            help="Enables multiple selections.")
+    parser.add_argument("-T", dest="record_delimiter", default="\n",
+            help="Default record delimiter for multiple selections")
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-d', action="store_const", dest="fileType", const="dirs",
@@ -142,9 +143,12 @@ def main():
     else:
         runner = DirRun(args)
 
-    item = runner.find()
-    if item is not None:
-        formatted = args.f.format(item, *item.split(args.delim))
+    items = runner.find()
+    if items:
+        its = [item.split(args.delim) for item in items]
+        tots = args.record_delimiter.join(items)
+        ts = [args.record_delimiter.join(s) for s in zip(*its)]
+        formatted = args.f.format(tots, *ts)
         if args.stdout:
             print(formatted)
         else:
