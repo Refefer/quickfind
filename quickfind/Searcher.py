@@ -257,7 +257,11 @@ class Searcher(object):
             elif nextchar == '\r':
                 h = self._topItems(curHeaps[-1], highlighted + 1)
                 try:
-                    selections.append(h[highlighted])
+                    k = h[highlighted]
+                    if k in selections:
+                        selections.remove(k)
+                    else:
+                        selections.append(h[highlighted])
                 except IndexError:
                     pass
 

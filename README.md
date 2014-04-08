@@ -41,15 +41,21 @@ Up and Down arrow keys selects which file to open.  Enter opens selects the high
 
 Sometimes a single query isn't enough to differentiate between the files.  By pressing Tab, _quickfind_ will add another 'searcher' query for additional filtering.
 
+
+Multiple files
+--------------
+Multiple entries can be selected when the '-m' flag is provided.  In multiselect mode, 
+'Enter' adds the highlighted file to the selection.  After all selections have been made, ctrl+D exits _quickfind_ with the selected entries.
+
 Stdin
 -----
-_quickfind_ can search on stdin when provided a naked '-':
+_quickfind_ can search on stdin:
     
-    find . -type f | qf -
+    find . -type f | qf
 
 _quickfind_ can further be extended to execute custom commands after an item as been selected
     # To kill a process
-    ps aux | qf - -f "kill -9 {2}"
+    ps aux | qf -f "kill -9 {2}"
 
 _quickfind_ similarly can output to stdout with the '-o' flag rather than exec-ing the 
 formatted command:
