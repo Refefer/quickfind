@@ -82,12 +82,12 @@ class CtagsRun(Runner):
         except KeyboardInterrupt:
             sys.exit(0)
 
-        if self.args.f == DEFAULT_COMMAND and found.pattern.isdigit():
-            self.args.f = '%s +{2} {1}' % os.environ['EDITOR']
-        else:
-            self.args.f = '{1}'
+        if found:
+            found = found[0]
+            if self.args.f == DEFAULT_COMMAND and found.pattern.isdigit():
+                self.args.f = '%s +{2} {1}' % os.environ['EDITOR']
 
-        return ["%s %s" % (found.file, found.pattern)]
+            return ["%s %s" % (found.file, found.pattern)]
 
     def find_ctag_file(self):
         directory = os.getcwd()
