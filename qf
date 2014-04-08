@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import os, sys
+import os, sys, stat
 import argparse
 import functools
 import shlex
@@ -111,8 +111,6 @@ def build_arg_parser():
     parser.add_argument('-f', default=DEFAULT_COMMAND,
             help="Format of the output.  When the '-o' flag is provided, defaults to " \
                  "'{1}'.  When File mode is specified, executes '$EDITOR {0}'.")
-    parser.add_argument('-', dest='stdin',
-            action="store_true", help="Reads from stdin.")
     parser.add_argument('-D', dest='delim', default=None,
             help="Delimiter for {}-style parsing.")
     parser.add_argument('-o', dest='stdout', action="store_true",
@@ -131,8 +129,13 @@ def build_arg_parser():
 
     return parser.parse_args()
 
+def isPiped():
+    mode = os.fstat(sys.stdin.fileno()).st_mode
+    return  stat.S_ISFIFO(mode) or stat.S_ISREG(mode)
+
 def main():
     args = build_arg_parser()
+    args.stdin = isPiped()
     if args.stdout and args.f == DEFAULT_COMMAND:
         args.f = "{0}"
 
