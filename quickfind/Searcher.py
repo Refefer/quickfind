@@ -77,7 +77,6 @@ class CursesPrinter(Output):
     def __init__(self, printf):
         self.printf = printf
         self.querylen = 0
-        self.getChar = GetchUnix()
         self.colors = {}
         self.TAB = CString("~", fcolor="red")
 
@@ -87,6 +86,9 @@ class CursesPrinter(Output):
         curses.start_color()
         curses.use_default_colors()
         curses.noecho()
+
+    def getChar(self):
+        return self.window.getch()
 
     def cleanup(self):
         curses.echo()
@@ -241,20 +243,31 @@ class Searcher(object):
             nextchar = getchar()
             cols, rows = self.output.dimensions()
 
-            # Ansi escape for arrows
-            if ord(nextchar) == 27:
-                getchar()
-                nextchar = ord(getchar())
+            print(nextchar)
+            # Ansi escape for alt and arrow keys
+            if nextchar == 27:
+                # Alt key?
+                alt = getchar()
 
-                # Up/down
+                # Alt-N
+                if alt == 110:
+                    nextchar = 66
+                # Alt-P
+                elif alt == 112: 
+                    nextchar = 65
+                else:
+                    nextchar = getchar()
+
+                # Down
                 if nextchar == 66:
                     itemsShown = min(rows, len(curHeaps[-1])) - 1
                     highlighted = min(itemsShown, highlighted + 1)
+                # Up 
                 elif nextchar == 65:
                     highlighted = max(0, highlighted - 1)
 
                 # Selected
-            elif nextchar == '\r':
+            elif nextchar == 13:
                 h = self._topItems(curHeaps[-1], highlighted + 1)
                 try:
                     k = h[highlighted]
@@ -273,20 +286,20 @@ class Searcher(object):
                 highlighted = 0
                 
                 # Multiselect return
-                if ord(nextchar) == 4 and self.multiselect:
+                if nextchar == 4 and self.multiselect:
                     return selections
 
                 # Escape code
-                if ord(nextchar) in (3,4, 28, 26):
+                if nextchar in (3,4, 28, 26):
                     raise KeyboardInterrupt()
 
                 # Delete/backspace
-                if ord(nextchar) in (8, 127):
+                if nextchar in (8, 127):
                     if cur != "":
                         cur = cur[:-1]
                         curHeaps.pop()
                 else:
-                    cur += nextchar
+                    cur += chr(nextchar)
                     curHeaps.append(self._newHeap(cur, curHeaps[-1]))
 
             self._echo(cur, curHeaps[-1], highlighted, selections, len(curHeaps[0]))
