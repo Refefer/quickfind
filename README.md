@@ -37,7 +37,7 @@ and start typing!  _quickfind_ can be configured to match against file name and/
 while selecting either files, directories, or both.  By default, it filters out files listed
 in a tree's .gitignore.
 
-Up and Down arrow keys selects which file to open.  Enter opens selects the highlighted file.
+The Up/Down (or Alt-P/Alt-N) keys selects which file to open.  Enter opens selects the highlighted file.  In multiple select mode, toggles the inclusion of the selected file.
 
 Sometimes a single query isn't enough to differentiate between the files.  By pressing Tab, _quickfind_ will add another 'searcher' query for additional filtering.
 
@@ -61,7 +61,7 @@ _quickfind_ similarly can output to stdout with the '-o' flag rather than exec-i
 formatted command:
     
     # To view man a file
-    man $(man -k . | qf - -f "man {1}" -o)
+    man $(man -k . | qf -f "{1}" -o)
 
 Commands
 --------
