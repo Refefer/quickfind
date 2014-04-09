@@ -243,7 +243,6 @@ class Searcher(object):
             nextchar = getchar()
             cols, rows = self.output.dimensions()
 
-            print(nextchar)
             # Ansi escape for alt and arrow keys
             if nextchar == 27:
                 # Alt key?
@@ -267,7 +266,7 @@ class Searcher(object):
                     highlighted = max(0, highlighted - 1)
 
                 # Selected
-            elif nextchar == 13:
+            elif nextchar in (10, 13):
                 h = self._topItems(curHeaps[-1], highlighted + 1)
                 try:
                     k = h[highlighted]

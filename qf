@@ -154,10 +154,11 @@ def main():
         tots = args.record_delimiter.join(items)
         ts = [args.record_delimiter.join(s) for s in zip(*its)]
         formatted = args.f.format(tots, *ts)
+        f = os.path.expandvars(formatted)
         if args.stdout:
-            print(formatted)
+            print(f)
         else:
-            pieces = shlex.split(formatted)
+            pieces = shlex.split(f)
             os.execvp(pieces[0], pieces)      
 
 if __name__ == '__main__':
