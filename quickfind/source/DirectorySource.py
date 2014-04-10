@@ -33,7 +33,7 @@ class DirectorySource(Source):
             if os.path.isfile(pgi):
                 filters.append((dirname, GitIgnoreFilter(dirname, '.gitignore')))
 
-        return reversed(filters)
+        return list(reversed(filters))
 
     def fetch(self):
         # optimize for the base case
