@@ -12,6 +12,8 @@ from quickfind.source.DirectorySource import DirectorySource, ranker, dirFormatt
 from quickfind.source.CtagsSource import CtagsSource, CtagsRanker, CtagsFormatter
 from quickfind.source.Util import rec_dir_up,StringRanker, simpleFormatter
 
+EDITOR = os.environ.get('EDITOR', 'nano')
+
 class Runner(object):
     def __init__(self, args):
         self.rows, self.columns = Console.getDims()
@@ -93,9 +95,9 @@ class CtagsRun(Runner):
         if found:
             found = found[0]
             if self.args.f == DEFAULT_COMMAND and found.pattern.isdigit():
-                self.args.f = '%s +{2} {1}' % os.environ['EDITOR']
+                self.args.f = '%s +{2} {1}' % EDITOR
             elif self.args.f == DEFAULT_COMMAND:
-                self.args.f = '%s {1}' % os.environ['EDITOR']
+                self.args.f = '%s {1}' % EDITOR
 
             return ["%s %s" % (found.file, found.pattern)]
 
@@ -108,7 +110,7 @@ class CtagsRun(Runner):
 
         return None
 
-DEFAULT_COMMAND = "%s {0}" % os.environ.get('EDITOR', 'nano')
+DEFAULT_COMMAND = "%s {0}" % EDITOR
 
 def build_arg_parser():
     parser = argparse.ArgumentParser(description='A Fuzzy-finder for the terminally inclined')

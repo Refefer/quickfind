@@ -14,6 +14,10 @@ To install the faster version with ctags from Pypi:
 
     pip install quickfind[ctags,fsnix]
 
+To upgrade to the latest version:
+    
+    pip install quickfind --upgrade
+
 To install from source, clone the repo and type:
 
     python setup.py install
