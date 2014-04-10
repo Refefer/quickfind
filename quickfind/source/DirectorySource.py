@@ -53,7 +53,7 @@ class DirectorySource(Source):
     def fetchDir(self, d):
         lst = []
         ap = os.path.abspath
-        filters = self.find_parent_gis(d) if self.ignore_files else []
+        filters = self.find_parent_gis(d) if self.git_ignore else []
         for dirname, dirs, filenames in walk(d):
             names = []
             if not self.ignore_files:
