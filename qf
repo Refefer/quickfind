@@ -4,6 +4,7 @@ import os, sys, stat
 import argparse
 import functools
 import shlex
+import functools
 
 from quickfind.Searcher import Searcher, Ranker, CursesPrinter
 import quickfind.Console as Console
@@ -24,13 +25,20 @@ class DirRun(Runner):
     def find(self):
 
         git_ignore = self.args.g
+        dirs = []
+        for p in self.args.paths:
+            if os.path.isfile(p):
+                p = os.path.split(p)[0]
+            if os.path.isdir(p):
+                dirs.append(p)
+
+        DirSource = functools.partial(DirectorySource, dirs=dirs, git_ignore=git_ignore)
         if self.args.fileType == 'all':
-            ds = DirectorySource(ignore_directories=False, 
-                    ignore_files=False, git_ignore=git_ignore)
+            ds = DirSource(ignore_directories=False, ignore_files=False)
         elif self.args.fileType == 'files':
-            ds = DirectorySource(ignore_files=False, git_ignore=git_ignore)
+            ds = DirSource(ignore_files=False)
         else:
-            ds = DirectorySource(ignore_directories=False, git_ignore=git_ignore)
+            ds = DirSource(ignore_directories=False)
 
         items = ds.fetch()
 
@@ -92,7 +100,7 @@ class CtagsRun(Runner):
             return ["%s %s" % (found.file, found.pattern)]
 
     def find_ctag_file(self):
-        directory = os.getcwd()
+        directory = os.path.abspath(self.args.paths[0])
         for dir in rec_dir_up(directory):
             path = os.path.join(dir, "tags")
             if os.path.isfile(path):
@@ -100,10 +108,12 @@ class CtagsRun(Runner):
 
         return None
 
-DEFAULT_COMMAND = "%s {0}" % os.environ['EDITOR']
+DEFAULT_COMMAND = "%s {0}" % os.environ.get('EDITOR', 'nano')
 
 def build_arg_parser():
     parser = argparse.ArgumentParser(description='A Fuzzy-finder for the terminally inclined')
+    parser.add_argument("paths", metavar="PATH", nargs="*", default=['.'],
+            help="Paths to search.  If omitted, uses current working directory")
     parser.add_argument('-c', 
             action="store_true", help='Ctags quickfind')
     parser.add_argument('-g', 

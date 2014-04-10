@@ -18,29 +18,43 @@ if sys.version_info.major >= 3:
 File = namedtuple("File", "dir,name,sname")
 class DirectorySource(Source):
 
-    def __init__(self, dir=".", ignore_directories=True, ignore_files=True, git_ignore=True):
+    def __init__(self, dirs=".", ignore_directories=True, ignore_files=True, git_ignore=True):
         self.ignore_directories = ignore_directories
         self.ignore_files = ignore_files
         self.git_ignore = git_ignore
-        self.startDir = dir
-        self.filters = []
-        if git_ignore:
-            self.find_parent_gis()
+        self.startDirs = dirs
 
-    def find_parent_gis(self):
-        dirs = rec_dir_up(os.path.abspath(self.startDir))
+    def find_parent_gis(self, dir):
+        dirs = rec_dir_up(os.path.abspath(dir))
         next(dirs)
+        filters = []
         for dirname in dirs:
             pgi = os.path.join(dirname, '.gitignore')
             if os.path.isfile(pgi):
-                self.filters.append((dirname, GitIgnoreFilter(dirname, '.gitignore')))
+                filters.append((dirname, GitIgnoreFilter(dirname, '.gitignore')))
 
-        self.filters.reverse()
+        return reversed(filters)
 
     def fetch(self):
+        # optimize for the base case
+        lst = []
+        if len(self.startDirs) == 1:
+            return self.fetchDir(self.startDirs[0])
+
+        seen = set()
+        for d in self.startDirs:
+            for f in self.fetchDir(d):
+                if f not in seen:
+                    lst.append(f)
+                    seen.add(f)
+
+        return lst
+
+    def fetchDir(self, d):
         lst = []
         ap = os.path.abspath
-        for dirname, dirs, filenames in walk(self.startDir):
+        filters = self.find_parent_gis(d) if self.ignore_files else []
+        for dirname, dirs, filenames in walk(d):
             names = []
             if not self.ignore_files:
                 names = filenames
@@ -50,20 +64,21 @@ class DirectorySource(Source):
             abspath = ap(dirname)
             if self.git_ignore and '.gitignore' in filenames:
                 gif = GitIgnoreFilter(abspath, '.gitignore')
-                self.filters.append((abspath, gif))
+                filters.append((abspath, gif))
 
-            while self.filters:
-                path, _ = self.filters[-1]
+            while filters:
+                path, _ = filters[-1]
                 if abspath.startswith(path): break
-                self.filters.pop()
+                filters.pop()
 
-            fltr = self.filters[-1][1] if self.filters else None
+            fltr = filters[-1][1] if filters else None
             
             if fltr is None:
                 files = (File(dirname, name, name.lower()) for name in names)
             else:
                 files = (File(dirname, name, name.lower()) 
                         for name in names if fltr(name, abspath))
+
             lst.extend(files)
 
             # have to delete the names manually
@@ -71,7 +86,6 @@ class DirectorySource(Source):
                 for i in xrange(len(dirs) - 1, -1, -1):
                     if not fltr(dirs[i], abspath):
                         del dirs[i]
-
         return lst
 
 class GitIgnoreFilter(object):
