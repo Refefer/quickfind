@@ -81,9 +81,9 @@ class StringRanker(Ranker):
             if score is None:
                 return None
             agg_score += score
-        
+
         return agg_score + self.weight_f(item)
-    
+
     @staticmethod
     def new(weight_f=lambda *x: 0, **kwargs):
         kwargs['weight_f'] = weight_f

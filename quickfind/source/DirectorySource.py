@@ -37,31 +37,41 @@ class DirectorySource(Source):
 
     def fetch(self):
         # optimize for the base case
+        sd = set()
         lst = []
         if len(self.startDirs) == 1:
-            return self.fetchDir(self.startDirs[0])
+            return self.fetchDir(self.startDirs[0], sd)
 
-        seen = set()
         for d in self.startDirs:
-            for f in self.fetchDir(d):
-                if f not in seen:
-                    lst.append(f)
-                    seen.add(f)
+            lst.extend(self.fetchDir(d, sd))
 
         return lst
 
-    def fetchDir(self, d):
+    # Walk interface is annoying: to remove dirs, you have to del them from
+    # the array
+    def delDirs(self, dirs, f):
+        for i in xrange(len(dirs) - 1, -1, -1):
+            if not f(dirs[i]):
+                del dirs[i]
+
+    def fetchDir(self, d, seenDirs):
         lst = []
         ap = os.path.abspath
         filters = self.find_parent_gis(d) if self.git_ignore else []
         for dirname, dirs, filenames in walk(d):
+            abspath = ap(dirname)
+            if abspath in seenDirs:
+                self.delDirs(dirs, lambda x: False)
+                continue
+
+            seenDirs.add(abspath)
+
             names = []
             if not self.ignore_files:
                 names = filenames
             if not self.ignore_directories:
                 names.extend(dirs)
 
-            abspath = ap(dirname)
             if self.git_ignore and '.gitignore' in filenames:
                 gif = GitIgnoreFilter(abspath, '.gitignore')
                 filters.append((abspath, gif))
@@ -83,9 +93,8 @@ class DirectorySource(Source):
 
             # have to delete the names manually
             if fltr is not None:
-                for i in xrange(len(dirs) - 1, -1, -1):
-                    if not fltr(dirs[i], abspath):
-                        del dirs[i]
+                self.delDirs(dirs, lambda d: fltr(d, abspath))
+
         return lst
 
 class GitIgnoreFilter(object):
