@@ -73,7 +73,6 @@ By default, _quickfind_ will execute "$EDITOR {0}", where "{0}" represents the e
 selected record.  In "{N}", N represents the Nth piece split by the delimiter specified
 by -D.  By default, the delimiter is whitespace.  
 
-
 Vim
 ---
 A basic vim plugin has been developed to open files up with _quickfind_.  To install,
@@ -92,7 +91,7 @@ Add to your .bashrc:
     # To enable a new bash command, 'qcd', for quickly cd-ing to a directory.
     function qcd() {
         _OFILE=$(qf -d -o -f "{0}")
-        if [ -n $_OFILE ]; then
+        if [ -n "$_OFILE" ]; then
             cd $_OFILE
         fi
         unset _OFILE
