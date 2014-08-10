@@ -57,7 +57,8 @@ _quickfind_ can search on stdin:
     
     find . -type f | qf
 
-_quickfind_ can further be extended to execute custom commands after an item as been selected
+_quickfind_ can further be extended to execute custom commands after an item as been selected:
+
     # To kill a process
     ps aux | qf -f "kill -9 {2}"
 
