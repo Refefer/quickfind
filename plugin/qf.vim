@@ -3,7 +3,7 @@ function! QuickFind()
   let command = "qf -o > " . tmpfile
   return s:evaluate(command, tmpfile)
 endfunction
-command! -nargs=0 -complete=file -bang -bar QF call QuickFind()
+command! -nargs=0 QF call QuickFind()
 
 function! QuickFindC()
   let tmpfile=tempname()
@@ -24,6 +24,6 @@ function! s:evaluate(command, tmpfile)
   endif
   return
 endfunction
-command! -nargs=0 -complete=file -bang -bar TS call QuickFindC()
+command! -nargs=0 TS call QuickFindC()
 
 
