@@ -47,7 +47,7 @@ class DirRun(Runner):
         sr = ranker(self.args.p)
         s = Searcher(sr, CursesPrinter(dirFormatter), self.args.multiselect)
         try:
-            found = s.run(items)
+            found = s.run(items, self.args.q)
         except KeyboardInterrupt:
             sys.exit(0)
 
@@ -56,7 +56,7 @@ class DirRun(Runner):
 class StdinRun(Runner):
     def fetch(self):
         results = []
-        for i,line in enumerate(sys.stdin):
+        for i, line in enumerate(sys.stdin):
             results.append((i, line.strip()))
 
         # reopen stdin
@@ -71,7 +71,7 @@ class StdinRun(Runner):
         output = CursesPrinter(lambda x,q,d: simpleFormatter(x[1], q,d))
         s = Searcher(sr, output, self.args.multiselect)
         try:
-            found = s.run(items)
+            found = s.run(items, self.args.q)
         except KeyboardInterrupt:
             sys.exit(0)
 
@@ -88,7 +88,7 @@ class CtagsRun(Runner):
         items = CtagsSource(ctagsFile).fetch()
         s = Searcher(CtagsRanker, CursesPrinter(CtagsFormatter(self.columns)))
         try:
-            found = s.run(items)
+            found = s.run(items, self.args.q)
         except KeyboardInterrupt:
             sys.exit(0)
 
@@ -122,6 +122,8 @@ def build_arg_parser():
             action="store_false", help='Do not filter out files in .gitignore')
     parser.add_argument('-p', 
             action="store_true", help='Match also on path')
+    parser.add_argument('-q', default="",
+            help='Preseeds the query with the provided provided string')
     parser.add_argument('-f', default=DEFAULT_COMMAND,
             help="Format of the output.  When the '-o' flag is provided, defaults to " \
                  "'{1}'.  When File mode is specified, executes '$EDITOR {0}'.")

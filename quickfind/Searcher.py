@@ -233,13 +233,18 @@ class Searcher(object):
             items.append(item)
         return items
 
-    def _loop(self, curHeaps, getchar):
+    def _loop(self, curHeaps, getchar, cur):
         heapq.heapify(curHeaps[0])
 
-        cur = ""
+        # If we've seeded the query, build the heap stack
+        for i in xrange(1, len(cur) + 1):
+            curHeaps.append(self._newHeap(cur[:i], curHeaps[-1]))
+
         highlighted = 0
         selections = []
         while True:
+            self._echo(cur, curHeaps[-1], highlighted, selections, len(curHeaps[0]))
+
             nextchar = getchar()
             cols, rows = self.output.dimensions()
 
@@ -301,8 +306,6 @@ class Searcher(object):
                     cur += chr(nextchar)
                     curHeaps.append(self._newHeap(cur, curHeaps[-1]))
 
-            self._echo(cur, curHeaps[-1], highlighted, selections, len(curHeaps[0]))
-
     def _echo(self, query, heap, highlighted, selections, totalItems):
         self.output.clear()
         self.output.printQuery(query)
@@ -316,7 +319,6 @@ class Searcher(object):
         self.output.printCount(totalItems, len(heap))
         self.output.flush()
 
-
     @contextmanager
     def redirStdout(self):
         stdout = os.dup(sys.stdout.fileno())
@@ -324,14 +326,13 @@ class Searcher(object):
         yield
         os.dup2(stdout, sys.stdout.fileno())
 
-    def run(self, items):
+    def run(self, items, q=""):
         with self.redirStdout():
             self.output.init()
             try:
                 heap = [(0, i) for i in items]
                 heap.sort()
-                self._echo("", heap, 0, [], len(items))
-                return self._loop([heap], self.output.getChar)
+                return self._loop([heap], self.output.getChar, q)
             finally:
                 self.output.cleanup()
 
