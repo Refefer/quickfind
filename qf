@@ -11,7 +11,7 @@ from quickfind.Orderer import STOrderer, auto_select
 import quickfind.Console as Console
 from quickfind.source.DirectorySource import DirectorySource, ranker, dirFormatter
 from quickfind.source.CtagsSource import CtagsSource, CtagsRanker, CtagsFormatter
-from quickfind.source.Util import rec_dir_up,StringRanker, simpleFormatter
+from quickfind.source.Util import rec_dir_up, StringRanker, simpleFormatter
 
 EDITOR = os.environ.get('EDITOR', 'nano')
 

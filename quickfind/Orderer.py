@@ -1,6 +1,7 @@
 from operator import add
 from multiprocessing import Process, Pipe, cpu_count
 import heapq
+import random
 
 class Orderer(object):
     def push_query(self, query):
@@ -25,7 +26,6 @@ class STOrderer(Orderer):
         its = [(0, item) for item in items]
         its.sort()
         self.heaps = [its]
-        heapq.heapify( self.heaps[0] )
 
     @property
     def lhq(self):
@@ -52,26 +52,46 @@ class STOrderer(Orderer):
 
     def _top_items(self, N):
         return heapq.nsmallest(N, self.lhq)
-    
+
     def item_count(self):
         return len(self.lhq)
 
     def total_count(self):
         return len(self.heaps[0])
 
-def m_target(ranker, items, pipe):
-    orderer = STOrderer(ranker, items)
-    while True:
-        command, args = pipe.recv()
-        if command == 'exit':
-            pipe.close()
-            return
+class LightSlice(object):
+    "Not copying the list saves time on big item sets"
 
-        pipe.send(getattr(orderer, command)(*args))
+    def __init__(self, items, start, end):
+        self.items = items
+        self.start = start
+        self.end = end
+
+    def __iter__(self):
+        end = len(self.items) if self.end is None else self.end
+        items = self.items
+        for i in xrange(self.start, end):
+            yield items[i]
+
+def m_target(ranker, items, start, end, pipe):
+    try:
+        batch = LightSlice(items, start, end)
+        orderer = STOrderer(ranker, batch)
+        while True:
+            command, args = pipe.recv()
+            if command == 'exit':
+                return
+
+            pipe.send(getattr(orderer, command)(*args))
+
+    except KeyboardInterrupt:
+        pass
+    finally:
+        pipe.close()
 
 class MTOrderer(Orderer):
 
-    def __init__(self, ranker, items, count=cpu_count()):
+    def __init__(self, ranker, items, count=cpu_count() * 2):
         self._total_count = len(items)
 
         procs = []
@@ -80,10 +100,9 @@ class MTOrderer(Orderer):
         for i in xrange(count):
             start = batch_size * i
             end = None if i == (count - 1) else start + batch_size
-            batch = items[slice(start, end)]
 
             parent, child = Pipe()
-            procs.append(Process(target=m_target, args=(ranker, batch, child)))
+            procs.append(Process(target=m_target, args=(ranker, items, start, end, child)))
             procs[-1].start()
             pipes.append(parent)
 
@@ -114,10 +133,6 @@ class MTOrderer(Orderer):
         heapq.heapify(top_items)
         return [item for _, item in heapq.nsmallest(N, top_items)]
         
-    def item_count(self):
-        self._eval_func('item_count', [])
-        return reduce(add, self._evict_pipe())
-
     def item_count(self):
         self._eval_func('item_count', [])
         return reduce(add, self._evict_pipe())

@@ -52,7 +52,7 @@ class StringRanker(Ranker):
         if '\t' in self.qs:
             self.qs = [q for q in self.qs.split('\t') if q]
         else:
-            self.qs = [self.qs]
+            self.qs = [ self.qs ]
 
     def get_parts(self, item):
         raise NotImplementedError()
@@ -67,7 +67,7 @@ class StringRanker(Ranker):
         if lq == 1:
             return lp
 
-        score = (lp) ** 0.5
+        score = lp ** 0.5
         score -= 1.0 if part.startswith(q) else 0.0
         score -= 1.0 if part.endswith(q) else 0.0
         return score
@@ -77,12 +77,17 @@ class StringRanker(Ranker):
 
         agg_score = 0.0
         for q in self.qs:
+
             score = self.rank_part(q, part)
             if score is None:
                 return None
+
             agg_score += score
 
-        return agg_score + self.weight_f(item)
+        if self.weight_f is not None:
+            agg_score += self.weight_f(item)
+
+        return agg_score
 
     @staticmethod
     def new(weight_f=lambda *x: 0, **kwargs):

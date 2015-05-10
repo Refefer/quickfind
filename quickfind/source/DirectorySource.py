@@ -155,6 +155,7 @@ class GitIgnoreFilter(object):
         # check exact
         if fn in self.exact_filters:
             return False
+
         # Check global globs
         for f in self.glob_filters:
             if f.match(fn) is not None:
@@ -178,7 +179,6 @@ def ranker(inc_path):
 
     weight = lambda _, s: s.dir.count(os.sep) ** 0.5
     return StringRanker.new(weight, inc_path=inc_path, get_part=rank)
-
 
 def dirFormatter(f, query, dims):
     return simpleFormatter(os.path.join(f.dir, f.name), query, dims)
