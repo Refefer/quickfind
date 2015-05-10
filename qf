@@ -27,7 +27,7 @@ class Runner(object):
         if self.args.st:
             return STOrderer
 
-        return auto_select
+        return functools.partial(auto_select, procs=self.args.mt)
 
 class DirRun(Runner):
 
@@ -147,6 +147,8 @@ def build_arg_parser():
             help="Default record delimiter for multiple selections")
     parser.add_argument("-st", dest="st", action="store_true",
             help="Use single threaded mode rather than smart multiprocessing")
+    parser.add_argument("-mt", dest="mt", type=int, default=6,
+            help="Maximum number of forks to use")
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-d', action="store_const", dest="fileType", const="dirs",

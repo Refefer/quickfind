@@ -92,7 +92,7 @@ def m_target(ranker, items, start, end, pipe):
 
 class MTOrderer(Orderer):
 
-    def __init__(self, ranker, items, count=cpu_count() * 2):
+    def __init__(self, ranker, items, count):
         self._total_count = len(items)
 
         procs = []
@@ -147,8 +147,8 @@ class MTOrderer(Orderer):
         for proc in self.procs:
             proc.join()
 
-def auto_select(ranker, items, N=10000):
+def auto_select(ranker, items, N=10000, procs=4):
     if len(items) > N:
-        return MTOrderer(ranker, items)
+        return MTOrderer(ranker, items, procs)
 
     return STOrderer(ranker, items)
