@@ -10,7 +10,6 @@ if sys.version_info.major >= 3:
 else:
     textize = lambda x: unicode(x, errors="ignore")
 
-
 class Output(object):
     def init(self):
         raise NotImplementedError()
@@ -213,37 +212,20 @@ class Ranker(object):
         raise NotImplementedError()
 
 class Searcher(object):
-    def __init__(self, ranker, output, multiselect=False):
-        self.ranker = ranker
+    def __init__(self, output, multiselect=False):
         self.output = output
         self.multiselect = multiselect
 
-    def _ranker(self, ranker, curHeap):
-        for w, item in curHeap:
-            score = ranker.rank(item)
-            if score is not None:
-                yield (score, item)
-
-    def _newHeap(self, query, curHeap):
-        return list(self._ranker(self.ranker(query), curHeap)) 
-
-    def _topItems(self, heap, N):
-        items = []
-        for (_, item) in heapq.nsmallest(N, heap):
-            items.append(item)
-        return items
-
-    def _loop(self, curHeaps, getchar, cur):
-        heapq.heapify(curHeaps[0])
+    def _loop(self, orderer, getchar, cur):
 
         # If we've seeded the query, build the heap stack
         for i in xrange(1, len(cur) + 1):
-            curHeaps.append(self._newHeap(cur[:i], curHeaps[-1]))
+            orderer.push_query(cur[:i])
 
         highlighted = 0
         selections = []
         while True:
-            self._echo(cur, curHeaps[-1], highlighted, selections, len(curHeaps[0]))
+            self._echo(cur, orderer, highlighted, selections)
 
             nextchar = getchar()
             cols, rows = self.output.dimensions()
@@ -264,7 +246,7 @@ class Searcher(object):
 
                 # Down
                 if nextchar == 66:
-                    itemsShown = min(rows, len(curHeaps[-1])) - 1
+                    itemsShown = min(rows, orderer.item_count()) - 1
                     highlighted = min(itemsShown, highlighted + 1)
                 # Up 
                 elif nextchar == 65:
@@ -272,7 +254,7 @@ class Searcher(object):
 
                 # Selected
             elif nextchar in (10, 13):
-                h = self._topItems(curHeaps[-1], highlighted + 1)
+                h = orderer.top_items(highlighted + 1)
                 try:
                     k = h[highlighted]
                     if k in selections:
@@ -301,22 +283,22 @@ class Searcher(object):
                 if nextchar in (8, 127):
                     if cur != "":
                         cur = cur[:-1]
-                        curHeaps.pop()
+                        orderer.pop_query()
                 else:
                     cur += chr(nextchar)
-                    curHeaps.append(self._newHeap(cur, curHeaps[-1]))
+                    orderer.push_query(cur)
 
-    def _echo(self, query, heap, highlighted, selections, totalItems):
+    def _echo(self, query, orderer, highlighted, selections):
         self.output.clear()
         self.output.printQuery(query)
 
         cols, rows = self.output.dimensions()
         
         s = set(selections)
-        for i, item in enumerate(self._topItems(heap, rows-2)):
+        for i, item in enumerate(orderer.top_items(rows - 2)):
             self.output.printItem(i, item, i==highlighted, item in s, query)
 
-        self.output.printCount(totalItems, len(heap))
+        self.output.printCount(orderer.total_count(), orderer.item_count())
         self.output.flush()
 
     @contextmanager
@@ -326,13 +308,12 @@ class Searcher(object):
         yield
         os.dup2(stdout, sys.stdout.fileno())
 
-    def run(self, items, q=""):
+    def run(self, orderer, q=""):
         with self.redirStdout():
             self.output.init()
             try:
-                heap = [(0, i) for i in items]
-                heap.sort()
-                return self._loop([heap], self.output.getChar, q)
+                return self._loop(orderer, self.output.getChar, q)
             finally:
+                orderer.cleanup()
                 self.output.cleanup()
 

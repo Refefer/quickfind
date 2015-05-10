@@ -7,6 +7,7 @@ import shlex
 import functools
 
 from quickfind.Searcher import Searcher, Ranker, CursesPrinter
+from quickfind.Orderer import STOrderer, auto_select
 import quickfind.Console as Console
 from quickfind.source.DirectorySource import DirectorySource, ranker, dirFormatter
 from quickfind.source.CtagsSource import CtagsSource, CtagsRanker, CtagsFormatter
@@ -21,6 +22,12 @@ class Runner(object):
 
     def find(self):
         raise NotImplementedError()
+
+    def get_orderer(self):
+        if self.args.st:
+            return STOrderer
+
+        return auto_select
 
 class DirRun(Runner):
 
@@ -45,9 +52,10 @@ class DirRun(Runner):
         items = ds.fetch()
 
         sr = ranker(self.args.p)
-        s = Searcher(sr, CursesPrinter(dirFormatter), self.args.multiselect)
+        s = Searcher(CursesPrinter(dirFormatter), self.args.multiselect)
+        orderer = self.get_orderer()
         try:
-            found = s.run(items, self.args.q)
+            found = s.run(orderer(sr, items), self.args.q)
         except KeyboardInterrupt:
             sys.exit(0)
 
@@ -69,9 +77,10 @@ class StdinRun(Runner):
         items = self.fetch()
         sr = StringRanker.new(get_part=lambda _, x: x[1])
         output = CursesPrinter(lambda x,q,d: simpleFormatter(x[1], q,d))
-        s = Searcher(sr, output, self.args.multiselect)
+        s = Searcher(output, self.args.multiselect)
+        orderer = self.get_orderer()
         try:
-            found = s.run(items, self.args.q)
+            found = s.run(orderer(sr, items), self.args.q)
         except KeyboardInterrupt:
             sys.exit(0)
 
@@ -86,9 +95,10 @@ class CtagsRun(Runner):
             sys.exit(1)
 
         items = CtagsSource(ctagsFile).fetch()
-        s = Searcher(CtagsRanker, CursesPrinter(CtagsFormatter(self.columns)))
+        s = Searcher(CursesPrinter(CtagsFormatter(self.columns)))
+        orderer = self.get_orderer()
         try:
-            found = s.run(items, self.args.q)
+            found = s.run(orderer(CtagsRanker, items), self.args.q)
         except KeyboardInterrupt:
             sys.exit(0)
 
@@ -135,6 +145,8 @@ def build_arg_parser():
             help="Enables multiple selections.")
     parser.add_argument("-T", dest="record_delimiter", default="\n",
             help="Default record delimiter for multiple selections")
+    parser.add_argument("-st", dest="st", action="store_true",
+            help="Use single threaded mode rather than smart multiprocessing")
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-d', action="store_const", dest="fileType", const="dirs",
