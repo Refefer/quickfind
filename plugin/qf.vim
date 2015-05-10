@@ -1,15 +1,22 @@
-function! QuickFind()
+function! QuickFind(...)
+  if a:0 > 0
+    let dir = a:1
+  else
+    let dir = ""
+  endif
+
   let tmpfile=tempname()
-  let command = "qf -o > " . tmpfile
+  let command = "qf " . dir . " -o > " . tmpfile
   return s:evaluate(command, tmpfile)
 endfunction
-command! -nargs=0 QF call QuickFind()
+command! -nargs=* QF call QuickFind(<q-args>)
 
 function! QuickFindC()
   let tmpfile=tempname()
   let command = "qf -c -o > " . tmpfile
   return s:evaluate(command, tmpfile)
 endfunction
+command! -nargs=0 TS call QuickFindC()
 
 function! s:evaluate(command, tmpfile)
   execute "silent !".a:command
@@ -24,6 +31,4 @@ function! s:evaluate(command, tmpfile)
   endif
   return
 endfunction
-command! -nargs=0 TS call QuickFindC()
-
 
