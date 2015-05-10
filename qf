@@ -4,7 +4,7 @@ import os, sys, stat
 import argparse
 import functools
 import shlex
-import functools
+from operator import itemgetter
 
 from quickfind.Searcher import Searcher, Ranker, CursesPrinter
 from quickfind.Orderer import STOrderer, auto_select
@@ -75,7 +75,7 @@ class StdinRun(Runner):
     def find(self):
 
         items = self.fetch()
-        sr = StringRanker.new(get_part=lambda _, x: x[1])
+        sr = StringRanker.new(get_part=itemgetter(1))
         output = CursesPrinter(lambda x,q,d: simpleFormatter(x[1], q,d))
         s = Searcher(output, self.args.multiselect)
         orderer = self.get_orderer()

@@ -219,7 +219,7 @@ class Searcher(object):
     def _loop(self, orderer, getchar, cur):
 
         # If we've seeded the query, build the heap stack
-        for i in xrange(1, len(cur) + 1):
+        for i in range(1, len(cur) + 1):
             orderer.push_query(cur[:i])
 
         highlighted = 0

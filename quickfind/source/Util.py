@@ -45,7 +45,7 @@ def highlight(v, query, color="green"):
 
 class StringRanker(Ranker):
 
-    weight_f = lambda x: 0
+    weight_f = None
 
     def __init__(self, query):
         self.qs = query.lower()

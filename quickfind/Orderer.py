@@ -24,7 +24,6 @@ class STOrderer(Orderer):
     def __init__(self, ranker, items):
         self.ranker = ranker
         its = [(0, item) for item in items]
-        its.sort()
         self.heaps = [its]
 
     @property
@@ -82,7 +81,9 @@ def m_target(ranker, items, start, end, pipe):
             if command == 'exit':
                 return
 
-            pipe.send(getattr(orderer, command)(*args))
+            res = getattr(orderer, command)(*args)
+            if res is not None:
+                pipe.send(res)
 
     except KeyboardInterrupt:
         pass
@@ -118,11 +119,9 @@ class MTOrderer(Orderer):
 
     def push_query(self, query):
         self._eval_func('push_query', [query])
-        self._evict_pipe()
 
     def pop_query(self):
         self._eval_func('pop_query', [])
-        self._evict_pipe()
 
     def top_items(self, N):
         self._eval_func('_top_items', [N])
